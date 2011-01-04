@@ -7099,19 +7099,19 @@ static public void writeClassFile(String internalName, byte[] bytecode) throws I
 		throw Util.runtimeException("*compile-path* not set");
 	String path = genPath + File.separator + internalName + ".class";
 	File cf = new File(path);
-	cf.getParentFile().mkdirs();
-	cf.createNewFile();
-	FileOutputStream cfs = new FileOutputStream(cf);
+	File dir = cf.getParentFile();
+	dir.mkdirs();
+	File tmp = File.createTempFile("compile-", ".tmp", dir);
+	FileOutputStream cfs = new FileOutputStream(tmp);
 	try
 		{
 		cfs.write(bytecode);
-		cfs.flush();
-		cfs.getFD().sync();
 		}
 	finally
 		{
 		cfs.close();
 		}
+	tmp.renameTo(cf);
 }
 
 public static void pushNS(){
