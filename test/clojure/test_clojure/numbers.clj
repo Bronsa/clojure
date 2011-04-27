@@ -142,6 +142,16 @@
 
 (defonce DELTA 1e-12)
 
+(deftest test-reflection-for-bignums
+  (are [x y] (= x y)
+       1 (Integer/valueOf 1N)
+       1 (Integer/valueOf (BigInteger. "1"))
+       1 (Long/valueOf 1N)
+       1 (Long/valueOf (BigInteger. "1")))
+  (are [x y] (< (- x y) DELTA)
+       1.5 (Float/valueOf 1.5M)
+       1.5 (Double/valueOf 1.5M)))
+
 (deftest test-add
   (are [x y] (= x y)
       (+) 0
