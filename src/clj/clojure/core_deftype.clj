@@ -57,7 +57,7 @@
 (defn- parse-impls [specs]
   (loop [ret {} s specs]
     (if (seq s)
-      (recur (assoc ret (first s) (take-while seq? (next s)))
+      (recur (update-in ret [(first s)] #(reduce1 conj %1 %2) (take-while seq? (next s)))
              (drop-while seq? (next s)))
       ret)))
 
