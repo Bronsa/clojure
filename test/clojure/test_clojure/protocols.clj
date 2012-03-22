@@ -478,6 +478,17 @@
 (defrecord RecordToTestCovariantHint [^String a]) ;; same for arrays also
 (deftype TypeToTestLongHint [^long a])
 (deftype TypeToTestByteHint [^byte a])
+(defprotocol ProtocolToTestMethodLongHint
+  (method-with-long-hint [this ^long arg]))
+(defprotocol ProtocolToTestMethodArgHints
+  (method-with-multiple-sigs [this ^long arg1 ^boolean arg2] [this ^boolean arg1 ^boolean arg2 ^boolean arg3]))
+(deftype TypeToTestMethodHints []
+  ProtocolToTestMethodLongHint
+  (method-with-long-hint [this ^long arg] arg)
+  ProtocolToTestMethodArgHints
+  (method-with-multiple-sigs [this ^long arg1 ^boolean arg2] arg1)
+  (method-with-multiple-sigs [this ^boolean arg1 ^boolean arg2 ^boolean arg3] arg2))
+
 
 (deftest hinting-test
   (testing "that primitive hinting requiring no coercion works as expected"
@@ -517,7 +528,11 @@
     (is (= (RecordToTestBoolHint. true) (clojure.test_clojure.protocols.RecordToTestBoolHint/create {:a true})))
     (is (= (RecordToTestBoolHint. true) (map->RecordToTestBoolHint {:a true})))
     (is (= (RecordToTestBoolHint. true) (->RecordToTestBoolHint true))))
-  (testing "covariant hints -- deferred"))
+  (testing "covariant hints -- deferred")
+  (testing "that method argument typehints work as expected"
+    (is (= (.method-with-long-hint (TypeToTestMethodHints.) 1) 1))
+    (is (= (.method-with-multiple-sigs (TypeToTestMethodHints.) 1 true) 1))
+    (is (= (.method-with-multiple-sigs (TypeToTestMethodHints.) true false true) false))))
 
 (deftest reify-test
   (testing "of an interface"
