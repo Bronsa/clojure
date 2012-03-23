@@ -285,16 +285,17 @@ public Object invoke(Object arg1) {
 }
 
 public Iterator iterator(){
-	//todo - something more efficient
 	return new Iterator(){
-		int i = 0;
+		ISeq s = seq();
 
 		public boolean hasNext(){
-			return i < count();
+			return s != null;
 		}
 
 		public Object next(){
-			return nth(i++);
+			Object f = s.first();
+			s = s.next();
+			return f;
 		}
 
 		public void remove(){
