@@ -83,6 +83,7 @@ static final Keyword arglistsKey = Keyword.intern(null, "arglists");
 static final Symbol INVOKE_STATIC = Symbol.intern("invokeStatic");
 
 static final Keyword volatileKey = Keyword.intern(null, "volatile");
+static final Keyword syncKey = Keyword.intern(null, "synchronized");
 static final Keyword implementsKey = Keyword.intern(null, "implements");
 static final String COMPILE_STUB_PREFIX = "compile__stub";
 
@@ -7652,7 +7653,8 @@ public static class NewInstanceMethod extends ObjMethod{
 	Type retType;
 	Class retClass;
 	Class[] exclasses;
-
+    boolean isSynchronized;
+    
 	static Symbol dummyThis = Symbol.intern(null,"dummy_this_dlskjsdfower");
 	private IPersistentVector parms;
 
@@ -7687,8 +7689,9 @@ public static class NewInstanceMethod extends ObjMethod{
 		//(methodname [this-name args*] body...)
 		//this-name might be nil
 		NewInstanceMethod method = new NewInstanceMethod(objx, (ObjMethod) METHOD.deref());
-		Symbol dotname = (Symbol)RT.first(form);
+		Symbol dotname = (Symbol)RT.first(form); //this loses metadata
 		Symbol name = (Symbol) Symbol.intern(null,munge(dotname.name)).withMeta(RT.meta(dotname));
+        method.isSynchronized = RT.booleanCast(RT.get(RT.meta(RT.first (form)), syncKey));
 		IPersistentVector parms = (IPersistentVector) RT.second(form);
 		if(parms.count() == 0)
 			{
@@ -7849,7 +7852,7 @@ public static class NewInstanceMethod extends ObjMethod{
 			for(int i=0;i<exclasses.length;i++)
 				extypes[i] = Type.getType(exclasses[i]);
 			}
-		GeneratorAdapter gen = new GeneratorAdapter(ACC_PUBLIC,
+		GeneratorAdapter gen = new GeneratorAdapter(ACC_PUBLIC + (isSynchronized ? ACC_SYNCHRONIZED : 0),
 		                                            m,
 		                                            null,
 		                                            extypes,
