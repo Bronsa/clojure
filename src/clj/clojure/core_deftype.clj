@@ -433,6 +433,7 @@
         fields (vec (map #(with-meta % nil) fields))
         [field-args over] (split-at 20 fields)]
     `(let []
+       (declare ~(symbol (str  '-> gname)))
        ~(emit-deftype* name gname (vec hinted-fields) (vec interfaces) methods)
        (import ~classname)
        ~(build-positional-factory gname classname fields)
