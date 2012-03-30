@@ -6,7 +6,6 @@
   <name>clojure</name>
   <packaging>jar</packaging>
   <version>1.5.0-alpha3</version>
-
   <url>http://clojure.org/</url>
   <description>Clojure core environment and runtime library.</description>
 
