@@ -2544,7 +2544,7 @@
 
 (defn drop-while
   "Returns a lazy sequence of the items in coll starting from the first
-  item for which (pred item) returns nil."
+  item for which (pred item) returns logical false."
   {:added "1.0"
    :static true}
   [pred coll]
@@ -2879,8 +2879,8 @@
 (defn await-for
   "Blocks the current thread until all actions dispatched thus
   far (from this thread or agent) to the agents have occurred, or the
-  timeout (in milliseconds) has elapsed. Returns nil if returning due
-  to timeout, non-nil otherwise."
+  timeout (in milliseconds) has elapsed. Returns logical false if
+  returning due to timeout, logical true otherwise."
   {:added "1.0"
    :static true}
   [timeout-ms & agents]
@@ -5106,7 +5106,7 @@
 
   (ns foo.bar
     (:refer-clojure :exclude [ancestors printf])
-    (:require (clojure.contrib sql sql.tests))
+    (:require (clojure.contrib sql combinatorics))
     (:use (my.lib this that))
     (:import (java.util Date Timer Random)
              (java.sql Connection Statement)))"
