@@ -9,7 +9,7 @@
 (in-ns 'clojure.core)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; defimpl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+(declare partition-by)
 (defmacro defimpl [name & impls]
   `(def ~name
      '~(with-meta
@@ -55,7 +55,7 @@
               (fn [r i m]
                 (let [curr (get r i)
                       f (fn [l]
-                          (into {} (map #(vector (apply str (first %)
+                          (into1 {} (map #(vector (apply str (first %)
                                                         (map (fn [i] (or (:tag (meta i)) "_")) (second %)))
                                                  %) l)))
                       curr (f curr)
