@@ -55,9 +55,8 @@
               (fn [r i m]
                 (let [curr (get r i)
                       f (fn [l]
-                          (into {} (map #(vector (keyword (apply str (first %)
-                                                                 (count (second %))
-                                                                 (map (fn [i] (:tag (meta i))) (second %))))
+                          (into {} (map #(vector (apply str (first %)
+                                                        (map (fn [i] (or (:tag (meta i)) "_")) (second %)))
                                                  %) l)))
                       curr (f curr)
                       m (f m)]
