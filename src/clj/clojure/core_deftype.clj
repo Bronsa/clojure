@@ -45,8 +45,6 @@
 (defn- parse-opts+specs [opts+specs]
   (let [[opts specs] (parse-opts opts+specs)
         impls (parse-impls specs)
-        [opts impls] [(dissoc opts :mixin)
-                      (merge-with concat impls (eval (:mixin opts)))]
         interfaces (-> (map #(if (var? (resolve %)) 
                                (:on (deref (resolve %)))
                                %)
