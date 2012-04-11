@@ -8,6 +8,16 @@
 
 (in-ns 'clojure.core)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;; defimpl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro defimpl [name & impls]
+  `(def ~name
+     '~(with-meta
+         (apply hash-map
+                (mapcat (fn [[[k] v]] [k v])
+                        (partition 2 (partition-by symbol? impls))))
+         {:impl true})))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; definterface ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn namespace-munge
@@ -36,11 +46,24 @@
       [opts s])))
 
 (defn- parse-impls [specs]
-  (loop [ret {} s specs]
-    (if (seq s)
-      (recur (assoc ret (first s) (take-while seq? (next s)))
-             (drop-while seq? (next s)))
-      ret)))
+  (let [[specs impls] ((juxt remove filter)
+                       #(and (symbol? %) (:impl (meta (eval %)))) specs)
+        impls (apply merge {} (map eval impls))]
+    (loop [ret impls s specs]
+      (if (seq s)
+        (let [assoc-methods
+              (fn [r i m]
+                (let [curr (get r i)
+                      f (fn [l]
+                          (into {} (map #(vector (keyword (str (first %)
+                                                               (count (second %))))
+                                                 %) l)))
+                      curr (f curr)
+                      m (f m)]
+                  (assoc r i (vals (merge curr m)))))]
+                          (recur (assoc-methods ret (first s) (take-while seq? (next s)))
+                (drop-while seq? (next s))))
+        ret))))
 
 (defn- parse-opts+specs [opts+specs]
   (let [[opts specs] (parse-opts opts+specs)
