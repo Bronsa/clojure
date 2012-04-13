@@ -183,3 +183,15 @@
    entries. Called by clojure.core/reduce-kv, and has same
    semantics (just different arg order)."
   (kv-reduce [amap f init]))
+
+(defprotocol CloseableResource
+  "Protocol for resources that can be closed (for use in with-open)."
+  (close [this]))
+
+(extend-protocol CloseableResource
+  ;; Note: in Java 1.7, there's a new Closeable super-interface
+  ;; java.lang.AutoCloseable, so at some point in time, we might want to switch
+  ;; to that.
+  java.io.Closeable
+  (close [this] (.close this)))
+

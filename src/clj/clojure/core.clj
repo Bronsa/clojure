@@ -3481,9 +3481,13 @@
 (defmacro with-open
   "bindings => [name init ...]
 
-  Evaluates body in a try expression with names bound to the values
-  of the inits, and a finally clause that calls (.close name) on each
-  name in reverse order."
+  Evaluates body in a try expression with names bound to the values of the
+  inits, and a finally clause that closes each resource in reverse order.
+
+  You can extend this functionality by extending the CloseableResource
+  protocol.  The default implementation works for all java.io.Closeables,
+  including Readers, Writers, InputStreams, OutputStreams, Sockets, and
+  Channels."
   {:added "1.0"}
   [bindings & body]
   (assert-args
@@ -3495,7 +3499,7 @@
                               (try
                                 (with-open ~(subvec bindings 2) ~@body)
                                 (finally
-                                  (. ~(bindings 0) close))))
+                                 (clojure.core.protocols/close ~(bindings 0)))))
     :else (throw (IllegalArgumentException.
                    "with-open only allows Symbols in bindings"))))
 
