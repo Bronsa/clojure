@@ -17,11 +17,58 @@
         clojure.template)
   (:require [clojure.data.generators :as gen]))
 
+(deftest equality
+  (are [x y] (== x y)
+    42    42
+    42    42.0
+    42    42N
+    42    42M
+    42    42.0M
+    42    42.00M
+    42.0  42
+    42.0  42.0
+    42.0  42N
+    42.0  42M
+    42.0  42.0M
+    42.0  42.00M
+    42N   42
+    42N   42.0
+    42N   42N
+    42N   42M
+    42N   42.0M
+    42N   42.00M
+    42M   42
+    42M   42.0
+    42M   42N
+    42M   42M
+    42M   42.0M
+    42M   42.00M
+    42.0M 42
+    42.0M 42.0
+    42.0M 42N
+    42.0M 42M
+    42.0M 42.0M
+    42.0M 42.00M
 
-; TODO:
-; ==
-; and more...
+    1.23  1.23
+    1.23  1.23M
+    1.23M 1.23
+    1.23M 1.23M )
 
+  (are [x y] (not (== x y))
+    12 12.1
+    1.23 123
+    34 3.4
+    1.23 1.234
+    123N 345N
+    123 345N
+    123N 345
+    12.34M 456N
+    12.34M 4.56
+    12.34 4.56M
+    12 4.56M
+    12M 4.56
+    12.34M 1.234M ))
 
 (deftest Coerced-String
   (is (thrown? IllegalArgumentException (int "0")))
