@@ -7301,15 +7301,19 @@ static public class NewInstanceExpr extends ObjExpr{
 		//todo - set up volatiles
 //		ret.volatiles = PersistentHashSet.create(RT.seq(RT.get(ret.optionsMap, volatileKey)));
 
-		PersistentVector interfaces = PersistentVector.EMPTY;
+        Class superClass = Object.class;
+        PersistentVector interfaces = PersistentVector.EMPTY;
 		for(ISeq s = RT.seq(interfaceSyms);s!=null;s = s.next())
 			{
 			Class c = (Class) resolve((Symbol) s.first());
-			if(!c.isInterface())
-				throw new IllegalArgumentException("only interfaces are supported, had: " + c.getName());
-			interfaces = interfaces.cons(c);
-			}
-		Class superClass = Object.class;
+			if(c.isInterface())
+                interfaces = interfaces.cons(c);
+            else if(Modifier.isAbstract(c.getModifiers()) && superClass == Object.class)
+                superClass = c;
+            else
+                throw new IllegalArgumentException("only interfaces or a single abstract class are supported, had: " + c.getName());
+            }
+	
 		Map[] mc = gatherMethods(superClass,RT.seq(interfaces));
 		Map overrideables = mc[0];
 		Map covariants = mc[1];
