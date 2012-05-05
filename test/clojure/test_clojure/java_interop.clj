@@ -151,6 +151,20 @@
             str)
         "chain chain chain")))
 
+(deftest test-proxy-super
+  (testing "proxy-super restores bindings"
+    (let [obj (proxy [java.lang.ClassLoader] []
+                (loadClass [cl]
+                  (try
+                    (proxy-super loadClass cl)
+                    (catch Exception e nil))))]
+      ;; sanity check
+      (is (= java.lang.String (.loadClass obj "java.lang.String")))
+
+      ;; both calls should behave the same
+      (is (nil? (.loadClass obj "does.not.exist")))
+      (is (nil? (.loadClass obj "does.not.exist"))))))
+
 
 (deftest test-bases
   (are [x y] (= x y)
