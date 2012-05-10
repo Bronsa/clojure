@@ -626,6 +626,36 @@
          ai3 ao3
          ai4 ao4)))
 
+;; nested associative ops
+
+(deftest test-update-in
+  (testing "'Updates' a value in a nested associative structure"
+    (let [m1 {:a 1 :b 2}
+          m2 {:a 1 :b 2 :c {:d 3 :e 4} :f nil :g false, nil {:h 5}}
+          m3 (assoc-in m2 [:c :e] {:i 6 :j 7})
+          v1 [1 [2 3] 4 5]
+          foos [{:foo "foo1" :bar 26} {:foo "foo2" :bar 43}]
+          matrix [[1 2 3]
+                  [3 4 5]
+                  [5 6 7]]]
+      (are [x y] (= x y)
+        (update-in v1 [2] inc) [1 [2 3] 5 5]
+        (update-in v1 [1 1] inc) [1 [2 4] 4 5]
+        (update-in m1 [:a] #(- % 4)) {:a -3 :b 2}
+        (update-in m1 [:b] #(- % 4 2)) {:a 1 :b -4}
+        (update-in matrix [2 2] * 3) [[1 2 3] [3 4 5] [5 6 21]]
+        (update-in matrix [0 1] + 3 3) [[1 8 3] [3 4 5] [5 6 7]]
+        (update-in {nil 2} [nil] (constantly 3)) {nil 3}
+        (update-in {nil 2 :a 6} [nil] (constantly 3)) {nil 3, :a 6}
+        (update-in m2 [:c :e] #(+ % 2)) {nil {:h 5}, :a 1, :c {:d 3, :e 6}, :b 2, :f nil, :g false}
+        (update-in m3 [:c :e :i] + 10) {nil {:h 5}, :a 1, :c {:d 3, :e {:j 7, :i 16}}, :b 2, :f nil, :g false}
+        (update-in foos [1 :bar] inc) [{:foo "foo1", :bar 26} {:foo "foo2", :bar 44}])))
+   (testing "CLJ-373: Does not create a new nil key when supplied with an empty or nil keys"
+     (are [x y] (= x y)
+      (update-in {1 2} [] (constantly {2 3})) {2 3}
+      (update-in {1 2} [] assoc 1 3) {1 3})))
+
+
 ;; *** Sets ***
 
 (deftest test-hash-set

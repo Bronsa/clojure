@@ -5670,11 +5670,13 @@
   created."
   {:added "1.0"
    :static true}
-  ([m [k & ks] f & args]
-   (if ks
-     (assoc m k (apply update-in (get m k) ks f args))
-     (assoc m k (apply f (get m k) args)))))
-
+  [m ks f & args]
+  (if (not (seq ks))
+    (apply f m args)
+    (when-let [[k & mk] ks]
+      (if mk
+        (assoc m k (apply update-in (get m k) mk f args))
+        (assoc m k (apply f (get m k) args))))))
 
 (defn empty?
   "Returns true if coll has no items - same as (not (seq coll)).
