@@ -81,8 +81,8 @@
 	    </goals>
 	    <configuration>
 	      <target>
-                <property name="maven.compile.classpath" refid="maven.compile.classpath"/>
-		<ant target="compile-clojure"/>
+                <property name="maven.compile.classpath" refid="maven.compile.classpath" />
+		<ant target="compile-clojure" />
 	      </target>
 	    </configuration>
 	  </execution>

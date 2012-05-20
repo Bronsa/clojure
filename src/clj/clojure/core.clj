@@ -338,7 +338,8 @@
      (. clojure.lang.LazilyPersistentVector (create (cons a (cons b (cons c (cons d args))))))))
 
 (defn vec
-  "Creates a new vector containing the contents of coll."
+  "Creates a new vector containing the contents of coll. Java arrays
+  will be aliased and should not be modified."
   {:added "1.0"
    :static true}
   ([coll]
@@ -1675,7 +1676,8 @@
    `(if-let ~bindings ~then nil))
   ([bindings then else & oldform]
    (assert-args
-     (and (vector? bindings) (nil? oldform)) "a vector for its binding"
+     (vector? bindings) "a vector for its binding"
+     (nil? oldform) "1 or 2 forms after binding vector"
      (= 2 (count bindings)) "exactly 2 forms in binding vector")
    (let [form (bindings 0) tst (bindings 1)]
      `(let [temp# ~tst]
@@ -2688,8 +2690,9 @@
 
 (defn sort
   "Returns a sorted sequence of the items in coll. If no comparator is
-  supplied, uses compare. comparator must
-  implement java.util.Comparator."
+  supplied, uses compare.  comparator must implement
+  java.util.Comparator.  If coll is a Java array, it will be modified.
+  To avoid this, sort a copy of the array."
   {:added "1.0"
    :static true}
   ([coll]
@@ -2704,8 +2707,9 @@
 (defn sort-by
   "Returns a sorted sequence of the items in coll, where the sort
   order is determined by comparing (keyfn item).  If no comparator is
-  supplied, uses compare. comparator must
-  implement java.util.Comparator."
+  supplied, uses compare.  comparator must implement
+  java.util.Comparator.  If coll is a Java array, it will be modified.
+  To avoid this, sort a copy of the array."
   {:added "1.0"
    :static true}
   ([keyfn coll]
@@ -3245,7 +3249,8 @@
   [x] (cond
        (decimal? x) x
        (float? x) (. BigDecimal valueOf (double x))
-       (ratio? x) (/ (BigDecimal. (.numerator x)) (.denominator x))
+       (ratio? x) (/ (BigDecimal. (.numerator ^clojure.lang.Ratio x)) (.denominator ^clojure.lang.Ratio x))
+       (instance? clojure.lang.BigInt x) (.toBigDecimal ^clojure.lang.BigInt x)
        (instance? BigInteger x) (BigDecimal. ^BigInteger x)
        (number? x) (BigDecimal/valueOf (long x))
        :else (BigDecimal. x)))
@@ -3924,10 +3929,14 @@
                              ret))))
                      pmap
                      (fn [bvec b v]
-                       (let [gmap (or (:as b) (gensym "map__"))
+                       (let [gmap (gensym "map__")
                              defaults (:or b)]
                          (loop [ret (-> bvec (conj gmap) (conj v)
-                                        (conj gmap) (conj `(if (seq? ~gmap) (apply hash-map ~gmap) ~gmap)))
+                                        (conj gmap) (conj `(if (seq? ~gmap) (clojure.lang.PersistentHashMap/create ~gmap) ~gmap))
+                                        ((fn [ret]
+                                           (if (:as b)
+                                             (conj ret (:as b) gmap)
+                                             ret))))
                                 bes (reduce1
                                      (fn [bes entry]
                                        (reduce1 #(assoc %1 %2 ((val entry) %2))
