@@ -70,7 +70,7 @@
 
 
 (defn old-table-model [data]
-  (let [row1 (first data)
+  (let [row1 (some #(when-not (nil? %) %) data)
 	colcnt (count row1)
 	cnt (count data)
 	vals (if (map? row1) vals identity)]
