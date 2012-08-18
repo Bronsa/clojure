@@ -496,6 +496,10 @@ static class DefExpr implements Expr{
 			boolean isDynamic = RT.booleanCast(RT.get(mm,dynamicKey));
 			if(isDynamic)
 			   v.setDynamic();
+			boolean isMacro = RT.booleanCast(RT.get(mm,Keyword.intern("macro")));
+			if(isMacro)
+			   v.setMacro();
+                
             if(!isDynamic && sym.name.startsWith("*") && sym.name.endsWith("*") && sym.name.length() > 1)
                 {
                 RT.errPrintWriter().format("Warning: %1$s not declared dynamic and thus is not dynamically rebindable, "
