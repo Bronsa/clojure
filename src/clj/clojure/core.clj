@@ -1445,7 +1445,7 @@
              (conj ret entry)
              ret)
            (next keys)))
-        ret)))
+        (with-meta ret (meta map)))))
 
 (defn keys
   "Returns a sequence of the map's keys."
@@ -1877,6 +1877,28 @@
                             (if (:error-handler opts) :continue :fail)))
        a)))
 
+(defn set-agent-send-executor!
+  "Sets the ExecutorService to be used by send"
+  {:added "1.5"}
+  [executor]
+  (set! clojure.lang.Agent/pooledExecutor executor))
+
+(defn set-agent-send-off-executor!
+  "Sets the ExecutorService to be used by send-off"
+  {:added "1.5"}
+  [executor]
+  (set! clojure.lang.Agent/soloExecutor executor))
+
+(defn send-via
+  "Dispatch an action to an agent. Returns the agent immediately.
+  Subsequently, in a thread supplied by executor, the state of the agent
+  will be set to the value of:
+
+  (apply action-fn state-of-agent args)"
+  {:added "1.5"}
+  [executor ^clojure.lang.Agent a f & args]
+  (.dispatch a (binding [*agent* a] (binding-conveyor-fn f)) args executor))
+
 (defn send
   "Dispatch an action to an agent. Returns the agent immediately.
   Subsequently, in a thread from a thread pool, the state of the agent
@@ -1886,7 +1908,7 @@
   {:added "1.0"
    :static true}
   [^clojure.lang.Agent a f & args]
-  (.dispatch a (binding [*agent* a] (binding-conveyor-fn f)) args false))
+  (apply send-via clojure.lang.Agent/pooledExecutor a f args))
 
 (defn send-off
   "Dispatch a potentially blocking action to an agent. Returns the
@@ -1897,7 +1919,7 @@
   {:added "1.0"
    :static true}
   [^clojure.lang.Agent a f & args]
-  (.dispatch a (binding [*agent* a] (binding-conveyor-fn f)) args true))
+  (apply send-via clojure.lang.Agent/soloExecutor a f args))
 
 (defn release-pending-sends
   "Normally, actions sent directly or indirectly during another action
@@ -2341,6 +2363,7 @@
   called, the returned function calls f with args + additional args."
   {:added "1.0"
    :static true}
+  ([f] f)
   ([f arg1]
    (fn [& args] (apply f arg1 args)))
   ([f arg1 arg2]
@@ -3876,7 +3899,7 @@
 
 (defn ns-resolve
   "Returns the var or Class to which a symbol will be resolved in the
-  namespace (unless found in the environement), else nil.  Note that
+  namespace (unless found in the environment), else nil.  Note that
   if the symbol is fully qualified, the var/Class to which it resolves
   need not be present in the namespace."
   {:added "1.0"
@@ -4756,18 +4779,25 @@
                              n-or-q
                              (LinkedBlockingQueue. (int n-or-q)))
          NIL (Object.) ;nil sentinel since LBQ doesn't support nils
-         agt (agent (seq s))
+         agt (agent (lazy-seq s)) ; never start with nil; that signifies we've already put eos
+         log-error (fn [q e]
+                     (if (.offer q q)
+                       (throw e)
+                       e))
          fill (fn [s]
-                (try
-                  (loop [[x & xs :as s] s]
-                    (if s
-                      (if (.offer q (if (nil? x) NIL x))
-                        (recur xs)
-                        s)
-                      (.put q q))) ; q itself is eos sentinel
-                  (catch Exception e
-                    (.put q q)
-                    (throw e))))
+                (when s
+                  (if (instance? Exception s) ; we failed to .offer an error earlier
+                    (log-error q s)
+                    (try
+                      (loop [[x & xs :as s] (seq s)]
+                        (if s
+                          (if (.offer q (if (nil? x) NIL x))
+                            (recur xs)
+                            s)
+                          (when-not (.offer q q) ; q itself is eos sentinel
+                            ()))) ; empty seq, not nil, so we know to put eos next time
+                      (catch Exception e
+                        (log-error q e))))))
          drain (fn drain []
                  (lazy-seq
                   (let [x (.take q)]
@@ -4888,7 +4918,7 @@
     (let [i (.getInterfaces c)
           s (.getSuperclass c)]
       (not-empty
-       (if s (cons s i) i)))))
+       (if s (cons s i) (seq i))))))
 
 (defn supers
   "Returns the immediate and indirect superclasses and interfaces of c, if any"
@@ -6104,7 +6134,7 @@
    :static true}
   [to from]
   (if (instance? clojure.lang.IEditableCollection to)
-    (persistent! (reduce conj! (transient to) from))
+    (with-meta (persistent! (reduce conj! (transient to) from)) (meta to))
     (reduce conj to from)))
 
 (defn mapv
@@ -6340,7 +6370,7 @@
 (defn deliver
   "Alpha - subject to change.
   Delivers the supplied value to the promise, releasing any pending
-  derefs. A subsequent call to deliver on a promise will throw an exception."
+  derefs. A subsequent call to deliver on a promise will have no effect."
   {:added "1.1"
    :static true}
   [promise val] (promise val))

@@ -589,7 +589,7 @@
             string? (recur (assoc opts :doc (first sigs)) (next sigs))
             keyword? (recur (assoc opts (first sigs) (second sigs)) (nnext sigs))
             [opts sigs]))
-        sigs (when-not (empty? sigs)
+        sigs (when sigs
                (reduce1 (fn [m s]
                           (let [name-meta (meta (first s))
                                 mname (with-meta (first s) nil)

@@ -710,7 +710,7 @@ static public Object contains(Object coll, Object key){
 		int n = ((Number) key).intValue();
 		return n >= 0 && n < count(coll);
 	}
-	return F;
+	throw new IllegalArgumentException("contains? not supported on type: " + coll.getClass().getName());
 }
 
 static public Object find(Object coll, Object key){
@@ -1134,6 +1134,8 @@ static public long longCast(Object x){
 	    return ((Number) x).longValue();
 	else if (x instanceof Ratio)
 	    return longCast(((Ratio)x).bigIntegerValue());
+	else if (x instanceof Character)
+	    return longCast(((Character) x).charValue());
 	else
 	    return longCast(((Number)x).doubleValue());
 }
