@@ -153,10 +153,14 @@
   (are [x y] (= x y)
       (bases java.lang.Math)
         (list java.lang.Object)
+      (bases java.util.Collection)
+        (list java.lang.Iterable)
+      (bases java.lang.Object)
+        nil
+      (bases java.lang.Comparable)
+        nil
       (bases java.lang.Integer)
-        (list java.lang.Number java.lang.Comparable)
-      (bases java.util.List)
-        (list java.util.Collection) ))
+        (list java.lang.Number java.lang.Comparable) ))
 
 (deftest test-supers
   (are [x y] (= x y)
