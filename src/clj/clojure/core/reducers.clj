@@ -111,6 +111,27 @@
       (coll-fold [_ n combinef reducef]
                  (coll-fold coll n combinef (xf reducef))))))
 
+(defn- fold-by-halves
+  "Folds the provided collection by halving it until it is smaller than the
+  requested size, and folding each subsection. halving-fn will be passed as
+  input a collection and its size (so you need not recompute the size); it
+  should return the left and right halves of the collection as a pair. Those
+  halves will normally be of the same type as the parent collection, but
+  anything foldable is sufficient."
+  [halving-fn coll n combinef reducef]
+  (let [size (count coll)]
+    (cond
+     (zero? size) (combinef)
+     (<= size n) (reduce reducef (combinef) coll)
+     :else
+     (let [[left right] (halving-fn coll size)
+           fc (fn [child] #(coll-fold child n combinef reducef))]
+       (fjinvoke
+        #(let [f1 (fc left)
+               t2 (fjtask (fc right))]
+           (fjfork t2)
+           (combinef (f1) (fjjoin t2))))))))
+
 (defn- do-curried
   [name doc meta args body]
   (let [cargs (vec (butlast args))]
@@ -325,21 +346,6 @@
     ([a b] (op a b))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; fold impls ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- foldvec
-  [v n combinef reducef]
-  (cond
-   (empty? v) (combinef)
-   (<= (count v) n) (reduce reducef (combinef) v)
-   :else
-   (let [split (quot (count v) 2)
-         v1 (subvec v 0 split)
-         v2 (subvec v split (count v))
-         fc (fn [child] #(foldvec child n combinef reducef))]
-     (fjinvoke
-      #(let [f1 (fc v1)
-             t2 (fjtask (fc v2))]
-         (fjfork t2)
-         (combinef (f1) (fjjoin t2)))))))
 
 (extend-protocol CollFold
  nil
@@ -356,7 +362,11 @@
  clojure.lang.IPersistentVector
  (coll-fold
   [v n combinef reducef]
-  (foldvec v n combinef reducef))
+  (fold-by-halves (fn [v size]
+                    (let [split (quot size 2)]
+                      [(subvec v 0 split)
+                       (subvec v split size)]))
+                  v n combinef reducef))
 
  clojure.lang.PersistentHashMap
  (coll-fold
