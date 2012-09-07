@@ -270,6 +270,10 @@
                 [name doc-string? attr-map? ([params*] prepost-map? body)+ attr-map?])
    :added "1.0"}
  defn (fn defn [&form &env name & fdecl]
+        ;; Note: Cannot delegate this check to def because of the call to (with-meta name ..)
+        (if (instance? clojure.lang.Symbol name)
+          nil
+          (throw (IllegalArgumentException. "First argument to defn must be a symbol")))
         (let [m (if (string? (first fdecl))
                   {:doc (first fdecl)}
                   {})
@@ -3443,11 +3447,14 @@
   "Expands into code that creates a fn that expects to be passed an
   object and any args and calls the named instance method on the
   object passing the args. Use when you want to treat a Java method as
-  a first-class fn."
+  a first-class fn. name may be type-hinted with the method receiver's
+  type in order to avoid reflective calls."
   {:added "1.0"}
   [name & args]
-  `(fn [target# ~@args]
-     (. target# (~name ~@args))))
+  (let [t (with-meta (gensym "target")
+            (meta name))]
+    `(fn [~t ~@args]
+       (. ~t (~name ~@args)))))
 
 (defmacro time
   "Evaluates expr and prints the time it took.  Returns the value of
@@ -3796,6 +3803,8 @@
           to-do (if (= :all (:refer fs))
                   (keys nspublics)
                   (or (:refer fs) (:only fs) (keys nspublics)))]
+      (when-not (instance? clojure.lang.Sequential to-do)
+        (throw (new Exception ":only/:refer value must be a sequential collection of symbols")))
       (doseq [sym to-do]
         (when-not (exclude sym)
           (let [v (nspublics sym)]
@@ -4031,9 +4040,31 @@
   [& sigs]
     (let [name (if (symbol? (first sigs)) (first sigs) nil)
           sigs (if name (next sigs) sigs)
-          sigs (if (vector? (first sigs)) (list sigs) sigs)
+          sigs (if (vector? (first sigs)) 
+                 (list sigs) 
+                 (if (seq? (first sigs))
+                   sigs
+                   ;; Assume single arity syntax
+                   (throw (IllegalArgumentException. 
+                            (if (seq sigs)
+                              (str "Parameter declaration " 
+                                   (first sigs)
+                                   " should be a vector")
+                              (str "Parameter declaration missing"))))))
           psig (fn* [sig]
+                 ;; Ensure correct type before destructuring sig
+                 (when (not (seq? sig))
+                   (throw (IllegalArgumentException.
+                            (str "Invalid signature " sig
+                                 " should be a list"))))
                  (let [[params & body] sig
+                       _ (when (not (vector? params))
+                           (throw (IllegalArgumentException. 
+                                    (if (seq? (first sigs))
+                                      (str "Parameter declaration " params
+                                           " should be a vector")
+                                      (str "Invalid signature " sig
+                                           " should be a list")))))
                        conds (when (and (next body) (map? (first body))) 
                                            (first body))
                        body (if conds (next body) body)
@@ -6622,8 +6653,24 @@
 (defn- ^{:dynamic true} assert-valid-fdecl
   "A good fdecl looks like (([a] ...) ([a b] ...)) near the end of defn."
   [fdecl]
-  (if-let [bad-args (seq (remove #(vector? %) (map first fdecl)))]
-    (throw (IllegalArgumentException. (str "Parameter declaration " (first bad-args) " should be a vector")))))
+  (when (empty? fdecl) (throw (IllegalArgumentException.
+                                "Parameter declaration missing")))
+  (let [argdecls (map 
+                   #(if (seq? %)
+                      (first %)
+                      (throw (IllegalArgumentException. 
+                        (if (seq? (first fdecl))
+                          (str "Invalid signature "
+                               %
+                               " should be a list")
+                          (str "Parameter declaration "
+                               %
+                               " should be a vector")))))
+                   fdecl)
+        bad-args (seq (remove #(vector? %) argdecls))]
+    (when bad-args
+      (throw (IllegalArgumentException. (str "Parameter declaration " (first bad-args) 
+                                             " should be a vector"))))))
 
 (defn with-redefs-fn
   "Temporarily redefines Vars during a call to func.  Each val of
@@ -6726,12 +6773,14 @@
              (throw (ex-info (str "Invalid form in data-reader file")
                              {:url url
                               :form k})))
-           (when (contains? mappings k)
-             (throw (ex-info "Conflicting data-reader mapping"
-                             {:url url
-                              :conflict k
-                              :mappings m})))
-           (assoc m k (data-reader-var v)))
+           (let [v-var (data-reader-var v)]
+             (when (and (contains? mappings k)
+                        (not= (mappings k) v-var))
+               (throw (ex-info "Conflicting data-reader mapping"
+                               {:url url
+                                :conflict k
+                                :mappings m})))
+             (assoc m k v-var)))
          mappings
          new-mappings)))))
 

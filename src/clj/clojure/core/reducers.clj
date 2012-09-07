@@ -21,51 +21,33 @@
 
 ;;;;;;;;;;;;;; some fj stuff ;;;;;;;;;;
 
-(defmacro ^:private compile-if
-  "Evaluate `exp` and if it returns logical true and doesn't error, expand to
-  `then`.  Else expand to `else`.
-
-  (compile-if (Class/forName \"java.util.concurrent.ForkJoinTask\")
-    (do-cool-stuff-with-fork-join)
-    (fall-back-to-executor-services))"
+(defmacro ^:private import-if
   [exp then else]
   (if (try (eval exp)
            (catch Throwable _ false))
-    `(do ~then)
-    `(do ~else)))
+    `(import '~then)
+    `(import '~else)))
 
-(compile-if
+(import-if
  (Class/forName "java.util.concurrent.ForkJoinTask")
- ;; We're running a JDK 7+
- (do
-   (def pool (delay (java.util.concurrent.ForkJoinPool.)))
+ (java.util.concurrent ForkJoinTask ForkJoinPool)
+ (jsr166y              ForkJoinTask ForkJoinPool))
 
-   (defn fjtask [^Callable f]
-     (java.util.concurrent.ForkJoinTask/adapt f))
 
-   (defn- fjinvoke [f]
-     (if (java.util.concurrent.ForkJoinTask/inForkJoinPool)
-       (f)
-       (.invoke ^java.util.concurrent.ForkJoinPool @pool ^java.util.concurrent.ForkJoinTask (fjtask f))))
+(def pool (delay (ForkJoinPool.)))
 
-   (defn- fjfork [task] (.fork ^java.util.concurrent.ForkJoinTask task))
+(defn fjtask [^Callable f]
+  (ForkJoinTask/adapt f))
 
-   (defn- fjjoin [task] (.join ^java.util.concurrent.ForkJoinTask task)))
- ;; We're running a JDK <7
- (do
-   (def pool (delay (jsr166y.ForkJoinPool.)))
+(defn- fjinvoke [f]
+  (if (ForkJoinTask/inForkJoinPool)
+    (f)
+    (.invoke ^ForkJoinPool @pool ^ForkJoinTask (fjtask f))))
 
-   (defn fjtask [^Callable f]
-     (jsr166y.ForkJoinTask/adapt f))
+(defn- fjfork [task] (.fork ^ForkJoinTask task))
 
-   (defn- fjinvoke [f]
-     (if (jsr166y.ForkJoinTask/inForkJoinPool)
-       (f)
-       (.invoke ^jsr166y.ForkJoinPool @pool ^jsr166y.ForkJoinTask (fjtask f))))
+(defn- fjjoin [task] (.join ^ForkJoinTask task))
 
-   (defn- fjfork [task] (.fork ^jsr166y.ForkJoinTask task))
-
-   (defn- fjjoin [task] (.join ^jsr166y.ForkJoinTask task))))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn reduce
