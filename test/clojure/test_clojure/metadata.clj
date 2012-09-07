@@ -112,6 +112,10 @@
      (let [z (assoc-in y [:guh :la] 18)]
        (is (= ym (meta z)))
        (is (= xm (meta (:guh z)))))
+     (let [z (dissoc-in y [:guh :foo])]
+       (is (= z (assoc y :guh (dissoc (y :guh) :foo))))
+       (is (= ym (meta z)))
+       (is (= xm (meta (:guh z)))))
      (let [z (update-in y [:guh :bar] inc)]
        (is (= ym (meta z)))
        (is (= xm (meta (:guh z)))))

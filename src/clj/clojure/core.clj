@@ -5642,6 +5642,16 @@
     (assoc m k (assoc-in (get m k) ks v))
     (assoc m k v)))
 
+(defn dissoc-in
+  "Dissociates an entry from a nested associative structure where ks is a
+  sequence of keys and returns a new nested structure."
+  {:added "1.5"
+   :static true}
+  [m [k & ks]]
+  (if ks
+    (assoc m k (dissoc-in (get m k) ks))
+    (dissoc m k)))
+
 (defn update-in
   "'Updates' a value in a nested associative structure, where ks is a
   sequence of keys and f is a function that will take the old value
