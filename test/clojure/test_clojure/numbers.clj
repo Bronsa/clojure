@@ -18,10 +18,60 @@
   (:require [clojure.test.generative.generators :as gen]))
 
 
-; TODO:
-; ==
-; and more...
+; TODO: more tests are needed
 
+(deftest equality
+  (are [x y] (== x y)
+    42    42
+    42    42.0
+    42    42N
+    42    42M
+    42    42.0M
+    42    42.00M
+    42.0  42
+    42.0  42.0
+    42.0  42N
+    42.0  42M
+    42.0  42.0M
+    42.0  42.00M
+    42N   42
+    42N   42.0
+    42N   42N
+    42N   42M
+    42N   42.0M
+    42N   42.00M
+    42M   42
+    42M   42.0
+    42M   42N
+    42M   42M
+    42M   42.0M
+    42M   42.00M
+    42.0M 42
+    42.0M 42.0
+    42.0M 42N
+    42.0M 42M
+    42.0M 42.0M
+    42.0M 42.00M
+
+    1.23  1.23
+    1.23  1.23M
+    1.23M 1.23
+    1.23M 1.23M )
+
+  (are [x y] (not (== x y))
+    12 12.1
+    1.23 123
+    34 3.4
+    1.23 1.234
+    123N 345N
+    123 345N
+    123N 345
+    12.34M 456N
+    12.34M 4.56
+    12.34 4.56M
+    12 4.56M
+    12M 4.56
+    12.34M 1.234M ))
 
 ;; *** Types ***
 
@@ -105,7 +155,7 @@
    [byte             [-1            0           1           Byte/MAX_VALUE  :error           :error             :error                 :error             :error]]
    [unchecked-byte   [-1            0           1           Byte/MAX_VALUE  -1               -1                 -1                     -1                 -1]]
    [short            [-1            0           1           Byte/MAX_VALUE  Short/MAX_VALUE  :error             :error                 :error             :error]]
-   [unchecked-short  [-1            0           1           Byte/MAX_VALUE  Short/MAX_VALUE  -1                 -1                     -1                 -1]] 
+   [unchecked-short  [-1            0           1           Byte/MAX_VALUE  Short/MAX_VALUE  -1                 -1                     -1                 -1]]
    [int              [-1            0           1           Byte/MAX_VALUE  Short/MAX_VALUE  Integer/MAX_VALUE  :error                 :error             :error]]
    [unchecked-int    [-1            0           1           Byte/MAX_VALUE  Short/MAX_VALUE  Integer/MAX_VALUE  -1                     Integer/MAX_VALUE  Integer/MAX_VALUE]]
    [long             [-1            0           1           Byte/MAX_VALUE  Short/MAX_VALUE  Integer/MAX_VALUE  Long/MAX_VALUE         :error             :error]]
@@ -305,7 +355,7 @@
   ; divide by zero
   (is (thrown? ArithmeticException (rem 9 0)))
   (is (thrown? ArithmeticException (rem 0 0)))
-  
+
   (are [x y] (= x y)
     (rem 4 2) 0
     (rem 3 2) 1
@@ -336,7 +386,7 @@
     (rem 2 -5) 2
     (rem -2 5) -2
     (rem -2 -5) -2
-    
+
     ; num = 0, div != 0
     (rem 0 3) 0
     (rem 0 -3) 0
@@ -352,7 +402,7 @@
   ; divide by zero
   (is (thrown? ArithmeticException (quot 9 0)))
   (is (thrown? ArithmeticException (quot 0 0)))
-  
+
   (are [x y] (= x y)
     (quot 4 2) 2
     (quot 3 2) 1
