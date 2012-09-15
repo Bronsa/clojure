@@ -848,10 +848,11 @@
 
 
 ;; *** Queues ***
-
 (deftest test-queues
   (let [EMPTY clojure.lang.PersistentQueue/EMPTY]
     (are [x y] (= x y)
+      (hash (conj EMPTY (Long. -1))) (hash (conj EMPTY (Integer. -1)))
+      (hash (conj EMPTY 1 2 3)) (hash [1 2 3])
       EMPTY EMPTY
       (into EMPTY (range 50)) (into EMPTY (range 50))
       (range 5) (into EMPTY (range 5))
