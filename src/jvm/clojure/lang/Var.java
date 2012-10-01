@@ -393,6 +393,11 @@ public final TBox getThreadBinding(){
 	return null;
 }
 
+public final boolean isSettable() {
+        TBox b = getThreadBinding();
+        return b != null && b.thread == Thread.currentThread();
+}
+
 final public IFn fn(){
 	return (IFn) deref();
 }
