@@ -187,6 +187,7 @@ final static public Var DEFAULT_DATA_READERS = Var.intern(CLOJURE_NS, Symbol.int
 final static public Var ASSERT = Var.intern(CLOJURE_NS, Symbol.intern("*assert*"), T).setDynamic();
 final static public Var MATH_CONTEXT = Var.intern(CLOJURE_NS, Symbol.intern("*math-context*"), null).setDynamic();
 static Keyword LINE_KEY = Keyword.intern(null, "line");
+static Keyword COLUMN_KEY = Keyword.intern(null, "column");
 static Keyword FILE_KEY = Keyword.intern(null, "file");
 static Keyword DECLARED_KEY = Keyword.intern(null, "declared");
 static Keyword DOC_KEY = Keyword.intern(null, "doc");
@@ -413,7 +414,7 @@ static public void load(String scriptbase, boolean failIfNotFound) throws IOExce
 	   || classURL == null) {
 		try {
 			Var.pushThreadBindings(
-					RT.map(CURRENT_NS, CURRENT_NS.deref(),
+					RT.mapUniqueKeys(CURRENT_NS, CURRENT_NS.deref(),
 					       WARN_ON_REFLECTION, WARN_ON_REFLECTION.deref()
 							,RT.UNCHECKED_MATH, RT.UNCHECKED_MATH.deref()));
 			loaded = (loadClassForName(scriptbase.replace('/', '.') + LOADER_SUFFIX) != null);
@@ -436,7 +437,7 @@ static void doInit() throws ClassNotFoundException, IOException{
 	load("clojure/core");
 
 	Var.pushThreadBindings(
-			RT.map(CURRENT_NS, CURRENT_NS.deref(),
+			RT.mapUniqueKeys(CURRENT_NS, CURRENT_NS.deref(),
 			       WARN_ON_REFLECTION, WARN_ON_REFLECTION.deref()
 					,RT.UNCHECKED_MATH, RT.UNCHECKED_MATH.deref()));
 	try {
@@ -1451,6 +1452,14 @@ static public IPersistentMap map(Object... init){
 	return PersistentHashMap.createWithCheck(init);
 }
 
+static public IPersistentMap mapUniqueKeys(Object... init){
+	if(init == null)
+		return PersistentArrayMap.EMPTY;
+	else if(init.length <= PersistentArrayMap.HASHTABLE_THRESHOLD)
+		return new PersistentArrayMap(init);
+	return PersistentHashMap.create(init);
+}
+
 static public IPersistentSet set(Object... init){
 	return PersistentHashSet.createWithCheck(init);
 }
@@ -1669,6 +1678,12 @@ static public Character peekChar(Reader r) throws IOException{
 static public int getLineNumber(Reader r){
 	if(r instanceof LineNumberingPushbackReader)
 		return ((LineNumberingPushbackReader) r).getLineNumber();
+	return 0;
+}
+
+static public int getColumnNumber(Reader r){
+	if(r instanceof LineNumberingPushbackReader)
+		return ((LineNumberingPushbackReader) r).getColumnNumber();
 	return 0;
 }
 
