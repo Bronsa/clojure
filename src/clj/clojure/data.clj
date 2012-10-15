@@ -115,7 +115,7 @@
   
   java.util.Map
   (diff-similar [a b]
-    (diff-associative a b (set/union (keys a) (keys b)))))
+    (diff-associative a b (into (set (keys a)) (keys b)))))
 
 (defn diff
   "Recursively compares a and b, returning a tuple of
