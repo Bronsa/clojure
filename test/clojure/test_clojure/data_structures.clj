@@ -10,7 +10,8 @@
 
 
 (ns clojure.test-clojure.data-structures
-  (:use clojure.test))
+  (:use clojure.test
+        [clojure.test.generative :exclude (is)]))
 
 
 ;; *** Helper functions ***
@@ -18,6 +19,16 @@
 (defn diff [s1 s2]
   (seq (reduce disj (set s1) (set s2))))
 
+
+;; *** Generative ***
+(defspec subcollection-counts-are-consistent
+  identity
+  [^collection coll]
+  (let [n (count coll)]
+    (dotimes [i n]
+      (is (= n
+             (+ i (count (nthnext coll i)))
+             (+ i (count (drop i coll))))))))
 
 ;; *** General ***
 
@@ -855,6 +866,9 @@
       (hash (conj EMPTY 1 2 3)) (hash [1 2 3])
       EMPTY EMPTY
       (into EMPTY (range 50)) (into EMPTY (range 50))
+      (conj EMPTY (Long. -1)) (conj EMPTY (Integer. -1))
+      (hash (conj EMPTY (Long. -1))) (hash (conj EMPTY (Integer. -1)))
+      (hash [1 2 3]) (hash (conj EMPTY 1 2 3))
       (range 5) (into EMPTY (range 5))
       (range 1 6) (-> EMPTY
                     (into (range 6))
@@ -941,3 +955,13 @@
       {z3b v4b, x1 5} [z3b v4a, z3a v4b, x1 5]
       {x1 v4a, w5a v4c, v4a z3b, y2 2} [x1 v4a, w5a v4a, w5b v4b,
                                         v4a z3a, y2 2, v4b z3b, w5c v4c])))
+
+
+(deftest test-assoc
+  (are [x y] (= x y)
+       [4] (assoc [] 0 4)
+       [5 -7] (assoc [] 0 5 1 -7)
+       {:a 1} (assoc {} :a 1)
+       {:a 2 :b -2} (assoc {} :b -2 :a 2))
+  (is (thrown? IllegalArgumentException (assoc [] 0 5 1)))
+  (is (thrown? IllegalArgumentException (assoc {} :b -2 :a))))

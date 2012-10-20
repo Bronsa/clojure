@@ -21,7 +21,7 @@ import java.util.Iterator;
  * so no reversing or suspensions required for persistent use
  */
 
-public class PersistentQueue extends Obj implements IPersistentList, IHashEq, Collection, Counted{
+public class PersistentQueue extends Obj implements IPersistentList, Collection, Counted, IHashEq{
 
 final public static PersistentQueue EMPTY = new PersistentQueue(null, 0, null, null);
 
@@ -80,14 +80,15 @@ public int hashCode(){
 	return _hash;
 }
 
-public int hasheq(){
-	int hash = 1;
-	for(ISeq s = seq(); s != null; s = s.next())
-		{
-		hash = 31 * hash + Util.hasheq(s.first());
-		}
-	return hash;
+public int hasheq() {
+    int hash = 1;
+    for(ISeq s = seq(); s != null; s = s.next())
+    {
+        hash = 31 * hash + Util.hasheq(s.first());
+    }
+    return hash;
 }
+
 public Object peek(){
 	return RT.first(f);
 }
