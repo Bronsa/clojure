@@ -383,7 +383,14 @@
          ([m#] (~(symbol (str classname "/create")) m#)))
        ~classname)))
 
-(defn- emit-deftype* 
+(defn record?
+  "Returns true if x is a record"
+  {:added "1.5"
+   :static true}
+  [x]
+  (instance? clojure.lang.IRecord x))
+
+(defn- emit-deftype*
   "Do not use this directly - use deftype"
   [tagname name fields interfaces methods]
   (let [classname (with-meta (symbol (str (namespace-munge *ns*) "." name)) (meta name))
@@ -473,6 +480,13 @@
        (import ~classname)
        ~(build-positional-factory gname classname fields)
        ~classname)))
+
+(defn type?
+  "Returns true if x is a type"
+  {:added "1.5"
+   :static true}
+  [x]
+  (instance? clojure.lang.IType x))
 
 ;;;;;;;;;;;;;;;;;;;;;;; protocols ;;;;;;;;;;;;;;;;;;;;;;;;
 
