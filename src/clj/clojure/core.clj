@@ -188,7 +188,10 @@
    ([map key val & kvs]
     (let [ret (assoc map key val)]
       (if kvs
-        (recur ret (first kvs) (second kvs) (nnext kvs))
+        (if (next kvs)
+          (recur ret (first kvs) (second kvs) (nnext kvs))
+          (throw (IllegalArgumentException.
+                  "assoc expects even number of arguments after map/vector, found odd number")))
         ret)))))
 
 ;;;;;;;;;;;;;;;;; metadata ;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4128,16 +4131,16 @@
 (defmacro when-first
   "bindings => x xs
 
-  Same as (when (seq xs) (let [x (first xs)] body))"
+  Roughly the same as (when (seq xs) (let [x (first xs)] body)) but xs is evaluated only once"
   {:added "1.0"}
   [bindings & body]
   (assert-args
      (vector? bindings) "a vector for its binding"
      (= 2 (count bindings)) "exactly 2 forms in binding vector")
   (let [[x xs] bindings]
-    `(when (seq ~xs)
-       (let [~x (first ~xs)]
-         ~@body))))
+    `(when-let [xs# (seq ~xs)]
+       (let [~x (first xs#)]
+           ~@body))))
 
 (defmacro lazy-cat
   "Expands to code which yields a lazy sequence of the concatenation
