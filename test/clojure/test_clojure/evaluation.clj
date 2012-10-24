@@ -220,7 +220,7 @@
   (in-test-ns
    (test-that
     "An empty record literal evaluates to an empty record"
-    (is (instance? a #clojure.test-clojure.evaluation{}))))
+    (is (instance? a #clojure.test_clojure.evaluation{}))))
 
   ;aargh, fragile tests, please fix
   #_(test-that
