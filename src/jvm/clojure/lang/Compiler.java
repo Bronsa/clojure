@@ -1859,7 +1859,7 @@ static class ConstantExpr extends LiteralExpr{
 			else if(v instanceof String)
 				return new StringExpr((String) v);
 			else if(v instanceof IPersistentCollection && ((IPersistentCollection) v).count() == 0)
-				return new EmptyExpr(v);
+				return EmptyExpr.parse(context, v);
 			else
 				return new ConstantExpr(v);
 		}
@@ -2757,6 +2757,24 @@ public static class EmptyExpr implements Expr{
 			gen.pop();
 			}
 	}
+
+    static public Expr parse(C context, Object coll) {
+        if ((coll instanceof PersistentList) ||
+            (coll instanceof PersistentVector) ||
+            (coll instanceof PersistentArrayMap) ||
+            (coll instanceof PersistentHashMap) ||
+            (coll instanceof PersistentHashSet))
+            {
+                Expr ret = new EmptyExpr(coll);
+                if(RT.meta(coll) != null)
+                    ret = new MetaExpr(ret, MapExpr
+                                       .parse(context == C.EVAL ? context : C.EXPRESSION, ((IObj) coll).meta()));
+                return ret;
+
+            }
+        else
+            return new ConstantExpr(coll);
+    }
 
 	public boolean hasJavaClass() {
 		return true;
@@ -4516,7 +4534,7 @@ static public class ObjExpr implements Expr{
             emitValue(PersistentArrayMap.create((java.util.Map) value), gen);
 			gen.invokeStatic(getType(value.getClass()), createMethod);
 			}
-		else if(value instanceof IPersistentMap)
+		else if((value instanceof PersistentHashMap) || (value instanceof PersistentArrayMap))
 			{
 			List entries = new ArrayList();
 			for(Map.Entry entry : (Set<Map.Entry>) ((Map) value).entrySet())
@@ -6364,14 +6382,8 @@ private static Expr analyze(C context, Object form, String name) {
 //	else if(fclass == Character.class)
 //		return new CharExpr((Character) form);
 		else if(form instanceof IPersistentCollection && ((IPersistentCollection) form).count() == 0)
-				{
-				Expr ret = new EmptyExpr(form);
-				if(RT.meta(form) != null)
-					ret = new MetaExpr(ret, MapExpr
-							.parse(context == C.EVAL ? context : C.EXPRESSION, ((IObj) form).meta()));
-				return ret;
-				}
-		else if(form instanceof ISeq)
+            return EmptyExpr.parse(context, form);
+        else if(form instanceof ISeq)
 				return analyzeSeq(context, (ISeq) form, name);
 		else if(form instanceof IPersistentVector)
 				return VectorExpr.parse(context, (IPersistentVector) form);
