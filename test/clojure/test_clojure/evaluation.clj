@@ -193,6 +193,7 @@
 ;;; Collections tests ;;;
 (def x 1)
 (def y 2)
+(defrecord a [b])
 
 (deftest Collections
   (in-test-ns
@@ -215,6 +216,11 @@
     (is (= (eval '()) ()))
     (is (empty? (eval ())))
     (is (= (eval (list)) ())))
+
+  (in-test-ns
+   (test-that
+    "An empty record literal evaluates to an empty record"
+    (is (instance? a #clojure.test-clojure.evaluation{}))))
 
   ;aargh, fragile tests, please fix
   #_(test-that
