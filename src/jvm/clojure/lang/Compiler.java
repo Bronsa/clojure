@@ -6334,7 +6334,7 @@ private static Expr analyze(C context, Object form, String name) {
 				return new StringExpr(((String) form).intern());
 //	else if(fclass == Character.class)
 //		return new CharExpr((Character) form);
-		else if(form instanceof IPersistentCollection && ((IPersistentCollection) form).count() == 0)
+		else if(form instanceof IPersistentCollection && ((IPersistentCollection) form).count() == 0 && !(form instanceof IRecord))
 				{
 				Expr ret = new EmptyExpr(form);
 				if(RT.meta(form) != null)
