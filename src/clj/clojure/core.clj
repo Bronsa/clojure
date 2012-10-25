@@ -6696,11 +6696,15 @@
        (keepi 0 coll))))
 
 (defn every-pred
-  "Takes a set of predicates and returns a function f that returns true if all of its
-  composing predicates return a logical true value against all of its arguments, else it returns
-  false. Note that f is short-circuiting in that it will stop execution on the first
-  argument that triggers a logical false result against the original predicates."
+  "Takes a set of predicates and returns a function f that returns true if all
+  of its composing predicates return a logical true value against all of its
+  arguments, else it returns false. Note that f is short-circuiting in that it
+  will stop execution on the first argument that triggers a logical false
+  result against the original predicates.  (every-pred) returns true for any
+  arguments."
   {:added "1.3"}
+  ([]
+     (constantly true))
   ([p]
      (fn ep1
        ([] true)
@@ -6736,11 +6740,15 @@
                                        (every? #(every? % args) ps))))))))
 
 (defn some-fn
-  "Takes a set of predicates and returns a function f that returns the first logical true value
-  returned by one of its composing predicates against any of its arguments, else it returns
-  logical false. Note that f is short-circuiting in that it will stop execution on the first
-  argument that triggers a logical true result against the original predicates."
+  "Takes a set of predicates and returns a function f that returns the first
+  logical true value returned by one of its composing predicates against any of
+  its arguments, else it returns logical false. Note that f is short-circuiting
+  in that it will stop execution on the first argument that triggers a logical
+  true result against the original predicates.  (some-fn) returns nil for any
+  arguments."
   {:added "1.3"}
+  ([]
+     (constantly nil))
   ([p]
      (fn sp1
        ([] nil)
