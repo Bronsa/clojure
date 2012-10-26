@@ -6785,6 +6785,10 @@ private static Expr analyzeSymbol(Symbol sym) {
 		Var v = (Var) o;
 		if(isMacro(v) != null)
 			throw Util.runtimeException("Can't take value of a macro: " + v);
+		if(RT.booleanCast(RT.WARN_ON_DEPRECATION.deref()) && RT.booleanCast(RT.get(v.meta(),RT.DEPRECATED_KEY)))
+			{
+				RT.errPrintWriter().format("Deprecation warning: var %s is tagged as deprecated\n", v);
+			}
 		if(RT.booleanCast(RT.get(v.meta(),RT.CONST_KEY)))
 			return analyze(C.EXPRESSION, RT.list(QUOTE, v.get()));
 		registerVar(v);
@@ -7054,6 +7058,7 @@ public static Object load(Reader rdr, String sourcePath, String sourceName) {
 			       COLUMN_AFTER, pushbackReader.getColumnNumber()
 			       ,RT.UNCHECKED_MATH, RT.UNCHECKED_MATH.deref()
 					,RT.WARN_ON_REFLECTION, RT.WARN_ON_REFLECTION.deref()
+					,RT.WARN_ON_DEPRECATION, RT.WARN_ON_DEPRECATION.deref()
 			       ,RT.DATA_READERS, RT.DATA_READERS.deref()
                         ));
 
@@ -7194,6 +7199,7 @@ public static Object compile(Reader rdr, String sourcePath, String sourceName) t
 			       VARS, PersistentHashMap.EMPTY
 					,RT.UNCHECKED_MATH, RT.UNCHECKED_MATH.deref()
 					,RT.WARN_ON_REFLECTION, RT.WARN_ON_REFLECTION.deref()
+					,RT.WARN_ON_DEPRECATION, RT.WARN_ON_DEPRECATION.deref()
 					,RT.DATA_READERS, RT.DATA_READERS.deref()
 			   //    ,LOADER, RT.makeClassLoader()
 			));

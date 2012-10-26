@@ -83,13 +83,14 @@
 
 
 (defmacro with-bindings
-  "Executes body in the context of thread-local bindings for several vars
-  that often need to be set!: *ns* *warn-on-reflection* *math-context*
-  *print-meta* *print-length* *print-level* *compile-path*
-  *command-line-args* *1 *2 *3 *e"
+  "Executes body in the context of thread-local bindings for several
+  vars that often need to be set!: *ns* *warn-on-reflection*
+  *warn-on-deprecation* *math-context* *print-meta* *print-length*
+  *print-level* *compile-path* *command-line-args* *1 *2 *3 *e"
   [& body]
   `(binding [*ns* *ns*
              *warn-on-reflection* *warn-on-reflection*
+             *warn-on-deprecation* *warn-on-deprecation*
              *math-context* *math-context*
              *print-meta* *print-meta*
              *print-length* *print-length*

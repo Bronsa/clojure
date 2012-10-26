@@ -5870,6 +5870,12 @@
   Defaults to false."
   {:added "1.0"})
 
+(add-doc-and-meta *warn-on-deprecation*
+  "When set to true, the compiler will emit warnings when resolving a
+   var which has a true value for :deprecated in its metadata map.
+
+  Defaults to true."  {:added "1.6"})
+
 (add-doc-and-meta *compile-path*
   "Specifies the directory where 'compile' will write out .class
   files. This directory must be in the classpath for 'compile' to
