@@ -18,6 +18,12 @@
 ; apply, map, filter, remove
 ; and more...
 
+(deftest test-map-indexed
+  (is (= (map-indexed vector '(\a \b \c \d \e))
+         '([0 \a] [1 \b] [2 \c] [3 \d] [4 \e])))
+  (is (= (map-indexed + (cycle '(4 2)) (range 0 100 20) (repeat 1))
+         '(5 24 47 66 89))))
+
 (deftest test-reduce-from-chunked-into-unchunked
   (= [1 2 \a \b] (into [] (concat [1 2] "ab"))))
  
