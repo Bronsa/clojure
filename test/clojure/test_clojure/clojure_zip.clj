@@ -45,4 +45,12 @@
 ; prev
 ; end?
 ; remove
+; node-seq
 
+(deftest node-seq-test
+  (let [s '(((1 2) 3) (4 (5)))
+        ns (zip/node-seq (zip/seq-zip s))]
+    (is (= (map zip/node (remove zip/branch? ns))
+           '(1 2 3 4 5)))
+    (is (= (map zip/node (filter zip/branch? ns))
+           '((((1 2) 3) (4 (5))) ((1 2) 3) (1 2) (4 (5)) (5))))))

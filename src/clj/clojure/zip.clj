@@ -277,7 +277,15 @@
           (with-meta [(make-node loc (peek pnodes) rs) 
                       (and ppath (assoc ppath :changed? true))]
                      (meta loc))))))
-  
+
+(defn node-seq
+  "Creates a sequence of nodes in a depth-first walk"
+  {:added "1.5"}
+  [loc]
+   (lazy-seq
+    (when-not (end? loc)
+            (cons loc (node-seq (next loc))))))
+
 (comment
 
 (load-file "/Users/rich/dev/clojure/src/zip.clj")
