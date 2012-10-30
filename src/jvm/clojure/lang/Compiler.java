@@ -1840,7 +1840,12 @@ static class ConstantExpr extends LiteralExpr{
 	}
 
 	public Class getJavaClass() {
-		return v.getClass();
+		Class c = v.getClass();
+        if (c == PersistentHashMap.class || c == PersistentArrayMap.class)
+            return IPersistentMap.class;
+         else
+             return c;
+
 		//throw new IllegalArgumentException("Has no Java class");
 	}
 
