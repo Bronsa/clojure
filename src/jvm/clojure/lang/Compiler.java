@@ -2903,7 +2903,11 @@ public static class MapExpr implements Expr{
 				throw new IllegalArgumentException("Duplicate constant keys in map");
 			if(valsConstant)
 				{
-				IPersistentMap m = PersistentHashMap.EMPTY;
+			    	IPersistentMap m;
+                		if (keyvals.length() <= PersistentArrayMap.HASHTABLE_THRESHOLD)
+                 		   m = PersistentArrayMap.EMPTY;
+             			else
+                 		   m = PersistentHashMap.EMPTY;
 				for(int i=0;i<keyvals.length();i+= 2)
 					{
 					m = m.assoc(((LiteralExpr)keyvals.nth(i)).val(), ((LiteralExpr)keyvals.nth(i+1)).val());
