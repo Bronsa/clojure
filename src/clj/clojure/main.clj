@@ -99,6 +99,7 @@
              *command-line-args* *command-line-args*
              *unchecked-math* *unchecked-math*
              *assert* *assert*
+             *default-data-reader-fn* nil
              *1 nil
              *2 nil
              *3 nil
@@ -265,7 +266,7 @@ by default when a new command-line REPL is started."} repl-requires
      (prompt)
      (flush)
      (loop []
-       (when-not 
+       (when-not
        	 (try (identical? (read-eval-print) request-exit)
 	  (catch Throwable e
 	   (caught e)
@@ -431,6 +432,6 @@ java -cp clojure.jar clojure.main -i init.clj script.clj args...")
          (recur more (conj inits [opt arg]))
          ((main-dispatch opt) args inits)))
      (repl-opt nil nil))
-   (finally 
+   (finally
      (flush))))
 
