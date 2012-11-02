@@ -100,6 +100,7 @@
              *unchecked-math* *unchecked-math*
              *assert* *assert*
              *default-data-reader-fn* nil
+             *default-symbol-missing-fn* nil
              *1 nil
              *2 nil
              *3 nil
