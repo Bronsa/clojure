@@ -104,7 +104,10 @@
          y (with-meta {:baz 4 :guh x} ym)]
  
      (is (= xm (meta (:guh y))))
+     (is (= xm (meta (conj x y))))
+     (is (= xm (meta (conj x))))
      (is (= xm (meta (reduce #(assoc %1 %2 (inc %2)) x (range 1000)))))
+     (is (= xm (meta (assoc x))))
      (is (= xm (meta (-> x (dissoc :foo) (dissoc :bar)))))
      (let [z (assoc-in y [:guh :la] 18)]
        (is (= ym (meta z)))
@@ -141,6 +144,8 @@
  
      (is (= xm (meta (y 1))))
      (is (= xm (meta (assoc x 1 "one"))))
+     (is (= xm (meta (assoc x))))
+     (is (= xm (meta (conj x))))
      (is (= xm (meta (reduce #(conj %1 %2) x (range 1000)))))
      (is (= xm (meta (pop (pop (pop x))))))
      (let [z (assoc-in y [1 2] 18)]
@@ -174,8 +179,10 @@
          y (with-meta #{4 x 6} ym)]
  
      (is (= xm (meta (y #{3 2 1}))))
+     (is (= xm (meta (conj x))))
      (is (= xm (meta (reduce #(conj %1 %2) x (range 1000)))))
      (is (= xm (meta (-> x (disj 1) (disj 2) (disj 3)))))
+     (is (= xm (meta (disj x))))
      (is (= xm (meta (into x y))))
      (is (= ym (meta (into y x))))
  

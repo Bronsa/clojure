@@ -966,11 +966,15 @@
                                         v4a z3a, y2 2, v4b z3b, w5c v4c])))
 
 
-(deftest test-assoc
-  (are [x y] (= x y)
-       [4] (assoc [] 0 4)
-       [5 -7] (assoc [] 0 5 1 -7)
-       {:a 1} (assoc {} :a 1)
-       {:a 2 :b -2} (assoc {} :b -2 :a 2))
+(deftest test-assoc-assoc!
+  (are [x y z] (= x
+                  (apply assoc y z)
+                  (persistent! (apply assoc! (transient y) z)))
+       [4] [] '(0 4)
+       [5 -7] [] '(0 5 1 -7)
+       {:a 1} {} '(:a 1)
+       {:a 2 :b -2} {} '(:b -2 :a 2))
   (is (thrown? IllegalArgumentException (assoc [] 0 5 1)))
-  (is (thrown? IllegalArgumentException (assoc {} :b -2 :a))))
+  (is (thrown? IllegalArgumentException (assoc! (transient []) 0 5 1)))
+  (is (thrown? IllegalArgumentException (assoc {} :b -2 :a)))
+  (is (thrown? IllegalArgumentException (assoc! (transient {}) :b -2 :a))))
