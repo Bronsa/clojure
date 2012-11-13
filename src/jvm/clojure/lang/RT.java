@@ -665,7 +665,7 @@ static Object getFrom(Object coll, Object key){
 		return null;
 	}
 
-	return null;
+	throw new IllegalArgumentException("get not supported on type: " + coll.getClass().getName());
 }
 
 static public Object get(Object coll, Object key, Object notFound){

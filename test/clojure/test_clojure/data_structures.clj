@@ -566,6 +566,7 @@
 (deftest test-get
   (let [m {:a 1, :b 2, :c {:d 3, :e 4}, :f nil, :g false, nil {:h 5}}]
     (is (thrown? Throwable (get-in {:a 1} 5)))
+    (is (thrown? Throwable (get 5 :a)))
     (are [x y] (= x y)
          (get m :a) 1
          (get m :e) nil
