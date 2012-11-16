@@ -1306,6 +1306,12 @@
    :static true}
   [x n] (. clojure.lang.Numbers testBit x n))
 
+(defn bit-count
+  "Returns the number of 1-bits in the 2's complement representation
+  of x as a long."
+  {:added "1.5"
+   :static true}
+  [x] (. clojure.lang.Numbers bitCount x))
 
 (defn bit-shift-left
   "Bitwise shift left"

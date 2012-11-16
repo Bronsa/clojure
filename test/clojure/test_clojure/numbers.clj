@@ -497,6 +497,10 @@ Math/pow overflows to Infinity."
   (is (true? (bit-test 2r1111 1)))
   (is (false? (bit-test 2r1101 1))))
 
+(deftest test-bit-count
+  (is (= 4 (bit-count 2r1111)))
+  (is (= 64 (bit-count -1))))
+
 ;; arrays
 (deftest test-array-types
   (are [x y z] (= (Class/forName x) (class y) (class z))

@@ -1567,6 +1567,13 @@ static public boolean testBit(long x, long n){
     return (x & (1L << n)) != 0;
 }
 
+static public long bitCount(Object x){
+    return bitCount(bitOpsCast(x));
+}
+static public long bitCount(long x){
+    return Long.bitCount(x);
+}
+
 //static public int minus(int x, int y){
 //	int ret = x - y;
 //	if (((ret ^ x) < 0 && (ret ^ ~y) < 0))
