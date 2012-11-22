@@ -5289,7 +5289,9 @@
 
 (defonce ^:dynamic
   ^{:private true :doc
-     "True while a verbose load is pending"}
+     "True while a verbose load, e.g., (require 'foo :verbose), is pending.
+  The default value (false) can be set using the system property
+  clojure.core.loading-verbosely."}
   *loading-verbosely* false)
 
 (defn- throw-if
@@ -6168,6 +6170,12 @@
 (load "gvec")
 (load "instant")
 (load "uuid")
+
+;; Before being able to load verbosely, the core print-method impls have to be
+;; defined by core_print.
+(alter-var-root #'*loading-verbosely*
+                (fn [_ prop] (= prop "true"))
+                (System/getProperty "clojure.core.loading-verbosely" "false"))
 
 (defn reduce
   "f should be a function of 2 arguments. If val is not supplied,
