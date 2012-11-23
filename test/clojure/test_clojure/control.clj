@@ -162,7 +162,8 @@
       
       (cond true 1 true (exception)) 1
       (cond nil 1 false 2 true 3 true 4) 3
-      (cond nil 1 false 2 true 3 true (exception)) 3 )
+      (cond nil 1 false 2 true 3 true (exception)) 3
+      (cond nil 1 false 2 :let [a true, b false] b 3 a 4) 4)
 
   ; false
   (are [x]  (= (cond x :a true :b) :b)

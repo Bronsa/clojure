@@ -554,16 +554,20 @@
   "Takes a set of test/expr pairs. It evaluates each test one at a
   time.  If a test returns logical true, cond evaluates and returns
   the value of the corresponding expr and doesn't evaluate any of the
-  other tests or exprs. (cond) returns nil."
+  other tests or exprs. (cond) returns nil.  Also supports
+  :let [binding-form expr ...] among the test/expr pairs."
   {:added "1.0"}
   [& clauses]
-    (when clauses
-      (list 'if (first clauses)
-            (if (next clauses)
-                (second clauses)
-                (throw (IllegalArgumentException.
+  (when clauses 
+    (let [test (first clauses)
+          then (if (next clauses) 
+                 (second clauses)
+                 (throw (IllegalArgumentException.
                          "cond requires an even number of forms")))
-            (cons 'clojure.core/cond (next (next clauses))))))
+          else (cons 'clojure.core/cond (next (next clauses)))]
+      (if (clojure.lang.Util/equiv :let  test)
+        (list 'let then else)
+        (list 'if test then else)))))
 
 (defn keyword
   "Returns a Keyword with the given namespace and name.  Do not use :
