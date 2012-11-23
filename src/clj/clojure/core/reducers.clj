@@ -13,7 +13,7 @@
       dependency info."
       :author "Rich Hickey"}
   clojure.core.reducers
-  (:refer-clojure :exclude [reduce map mapcat filter remove take take-while drop flatten])
+  (:refer-clojure :exclude [reduce map mapcat filter remove take take-while drop flatten reductions])
   (:require [clojure.walk :as walk]))
 
 (alias 'core 'clojure.core)
@@ -258,6 +258,21 @@
             (if (neg? @cnt)
               (f1 ret k v)
               ret)))))))
+
+(defcurried reductions
+  "Reduce coll with f beginning at init, retaining each intermediate
+  reduction value."
+  {:added "1.5"}
+  [f init coll]
+  (reducer coll
+   (fn [f1]
+     (let [sentinel (Object.), state (atom sentinel)]
+       (rfn [f1 k]
+         ([ret k v]
+            (f1 (if (identical? sentinel @state)
+                  (f1 ret (reset! state init))
+                  ret)
+                (swap! state f k v))))))))
 
 ;;do not construct this directly, use cat
 (deftype Cat [cnt left right]

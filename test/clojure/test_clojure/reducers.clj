@@ -47,6 +47,13 @@
   [filter r/filter #(into [] %)]
   [even? odd? #(< 200 %) identity])
 
+(defequivtest test-reductions
+  [#(reductions %1 [0 :initial] %2)
+   #(r/reductions %1 [0 :initial] %2)
+   #(into [] %)]
+  [(fn [[n _] x] [(inc n) x])
+   (fn [[n _] x] [(dec n) (dec x)])
+   (fn [[n _] x] [n [x]])])
 
 (deftest test-sorted-maps
   (let [m (into (sorted-map)
