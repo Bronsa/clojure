@@ -6800,8 +6800,9 @@
   binding-map will replace the root value of its key which must be
   a Var.  After func is called with no args, the root values of all
   the Vars will be set back to their old values.  These temporary
-  changes will be visible in all threads.  Useful for mocking out
-  functions during testing."
+  changes will be visible in all threads.  Not safe to use
+  concurrently on same Vars from multiple threads due to mutating of
+  root bindings.  Useful for mocking out functions during testing."
   {:added "1.3"}
   [binding-map func]
   (let [root-bind (fn [m]
