@@ -14,6 +14,8 @@ package clojure.lang;
 
 public abstract class AFn implements IFn {
 
+
+
 public Object call() {
 	return invoke();
 }
@@ -432,8 +434,18 @@ static public Object applyToHelper(IFn ifn, ISeq arglist) {
 }
 
 public Object throwArity(int n){
-	String name = getClass().getSimpleName();
-	int suffix = name.lastIndexOf("__");
-	throw new ArityException(n, (suffix == -1 ? name : name.substring(0, suffix)).replace('_', '-'));
+        String name = getClass().getSimpleName();
+       
+        try {
+            Var demunge = Var.find(Symbol.intern("clojure.main", "demunge"));
+            if (demunge != null)
+                name = (String)((IFn)demunge.deref()).invoke((Object)name);
+
+        }
+        catch (Exception e)
+        {
+        }
+
+	throw new ArityException(n, name);
 }
 }
