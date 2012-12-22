@@ -300,6 +300,9 @@ static final public Var CLEAR_SITES = Var.create(null).setDynamic();
 	EVAL
 }
 
+private class Recur {};
+static final public Class RECUR_CLASS = Recur.class;
+    
 interface Expr{
 	Object eval() ;
 
@@ -2624,6 +2627,8 @@ public static class IfExpr implements Expr, MaybePrimitiveExpr{
 		       && elseExpr.hasJavaClass()
 		       &&
 		       (thenExpr.getJavaClass() == elseExpr.getJavaClass()
+		        || thenExpr.getJavaClass() == RECUR_CLASS
+				|| elseExpr.getJavaClass() == RECUR_CLASS		        
 		        || (thenExpr.getJavaClass() == null && !elseExpr.getJavaClass().isPrimitive())
 		        || (elseExpr.getJavaClass() == null && !thenExpr.getJavaClass().isPrimitive()));
 	}
@@ -2633,7 +2638,9 @@ public static class IfExpr implements Expr, MaybePrimitiveExpr{
 			{
 			return thenExpr instanceof MaybePrimitiveExpr
 			       && elseExpr instanceof MaybePrimitiveExpr
-			       && thenExpr.getJavaClass() == elseExpr.getJavaClass()
+			       && (thenExpr.getJavaClass() == elseExpr.getJavaClass()
+			           || thenExpr.getJavaClass() == RECUR_CLASS
+			           || elseExpr.getJavaClass() == RECUR_CLASS)
 			       && ((MaybePrimitiveExpr)thenExpr).canEmitPrimitive()
 				   && ((MaybePrimitiveExpr)elseExpr).canEmitPrimitive();
 			}
@@ -2645,7 +2652,7 @@ public static class IfExpr implements Expr, MaybePrimitiveExpr{
 
 	public Class getJavaClass() {
 		Class thenClass = thenExpr.getJavaClass();
-		if(thenClass != null)
+		if(thenClass != null && thenClass != RECUR_CLASS)
 			return thenClass;
 		return elseExpr.getJavaClass();
 	}
@@ -6117,7 +6124,7 @@ public static class LetExpr implements Expr, MaybePrimitiveExpr{
 
 }
 
-public static class RecurExpr implements Expr{
+public static class RecurExpr implements Expr, MaybePrimitiveExpr{
 	public final IPersistentVector args;
 	public final IPersistentVector loopLocals;
 	final int line;
@@ -6222,7 +6229,7 @@ public static class RecurExpr implements Expr{
 	}
 
 	public Class getJavaClass() {
-		return null;
+		return RECUR_CLASS;
 	}
 
 	static class Parser implements IParser{
@@ -6285,6 +6292,14 @@ public static class RecurExpr implements Expr{
 				}
 			return new RecurExpr(loopLocals, args, line, column, source);
 		}
+	}
+
+	public boolean canEmitPrimitive() {
+		return true;
+	}
+
+	public void emitUnboxed(C context, ObjExpr objx, GeneratorAdapter gen) {
+		emit(context, objx, gen);
 	}
 }
 
