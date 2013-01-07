@@ -976,6 +976,10 @@ static public char charCast(double x){
     throw new IllegalArgumentException("Value out of range for char: " + x);
 }
 
+static public char charCast(String x){
+    throw new IllegalArgumentException("java.lang.String cannot be coerced to java.lang.Character");
+}
+
 static public boolean booleanCast(Object x){
 	if(x instanceof Boolean)
 		return ((Boolean) x).booleanValue();
@@ -1339,6 +1343,10 @@ static public char uncheckedCharCast(float x){
 
 static public char uncheckedCharCast(double x){
     return (char) x;
+}
+
+static public char uncheckedCharCast(String x){
+    throw new IllegalArgumentException("java.lang.String cannot be coerced to java.lang.Character");
 }
 
 static public int uncheckedIntCast(Object x){

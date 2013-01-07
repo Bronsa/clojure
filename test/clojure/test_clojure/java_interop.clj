@@ -495,6 +495,12 @@
 
   ; char -> char
   (is (instance? java.lang.Character (char \a)))
-  (is (= (char \a) \a)))
+  (is (= (char \a) \a))
+
+  ; char -> String
+  (is (thrown? IllegalArgumentException (char "a"))))
+
+(deftest test-unchecked-char
+  (is (thrown? IllegalArgumentException (unchecked-char "a"))))
 
 ;; Note: More coercions in numbers.clj
