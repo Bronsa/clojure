@@ -23,8 +23,11 @@
 ; and more...
 
 
-;; *** Types ***
+(deftest Coerced-String
+  (is (thrown? IllegalArgumentException (int "0")))
+  (is (thrown? IllegalArgumentException (unchecked-int "0"))))
 
+;; *** Types ***
 
 (deftest Coerced-BigDecimal
   (doseq [v [(bigdec 3) (bigdec (inc (bigint Long/MAX_VALUE)))]]

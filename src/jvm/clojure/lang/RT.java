@@ -1104,6 +1104,10 @@ static public int intCast(int x){
 	return x;
 }
 
+static public int intCast(String x){
+    throw new IllegalArgumentException("java.lang.String cannot be coerced to java.lang.Integer");
+}
+
 static public int intCast(float x){
 	if(x < Integer.MIN_VALUE || x > Integer.MAX_VALUE)
 		throw new IllegalArgumentException("Value out of range for int: " + x);
@@ -1369,6 +1373,10 @@ static public int uncheckedIntCast(float x){
 
 static public int uncheckedIntCast(double x){
     return (int) x;
+}
+
+static public int uncheckedIntCast(String x){
+    throw new IllegalArgumentException("java.lang.String cannot be coerced to java.lang.Integer");
 }
 
 static public long uncheckedLongCast(Object x){
