@@ -5265,13 +5265,15 @@
   `(clojure.core/refer '~'clojure.core ~@filters))
 
 (defmacro defonce
-  "defs name to have the root value of the expr iff the named var has no root value,
-  else expr is unevaluated"
-  {:added "1.0"}
-  [name expr]
-  `(let [v# (def ~name)]
-     (when-not (.hasRoot v#)
-       (def ~name ~expr))))
+  "defs name to have the root value of init iff the named var has no root value,
+  else init is unevaluated"
+  {:added "1.0"
+   :arglists '(symbol doc-string? init?)}
+  [name & args]
+  `(let [^clojure.lang.Var v# (ns-resolve '~(ns-name *ns*) '~name)]
+     (when (or (nil? v#)
+               (not (.hasRoot v#)))
+       (def ~name ~@args))))
 
 ;;;;;;;;;;; require/use/load, contributed by Stephen C. Gilardi ;;;;;;;;;;;;;;;;;;
 
