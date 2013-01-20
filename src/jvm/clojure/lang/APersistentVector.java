@@ -543,7 +543,12 @@ static class SubVector extends APersistentVector implements IObj{
 		this.end = end;
 	}
 
-	public Iterator iterator(){return ((APersistentVector)v).rangedIterator(start,end);}
+	public Iterator iterator(){
+		if (v instanceof APersistentVector) {
+			return ((APersistentVector)v).rangedIterator(start,end);
+		}
+		return super.iterator();
+	}
 
 	public Object nth(int i){
 		if((start + i >= end) || (i < 0))
