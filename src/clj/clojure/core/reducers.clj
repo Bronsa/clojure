@@ -106,8 +106,8 @@
   ([coll xf]
      (reify
       clojure.core.protocols/CollReduce
-      (coll-reduce [this f1]
-                   (clojure.core.protocols/coll-reduce this f1 (f1)))
+      (coll-reduce [_ f1]
+                   (clojure.core.protocols/coll-reduce coll f1 (f1)))
       (coll-reduce [_ f1 init]
                    (clojure.core.protocols/coll-reduce coll (xf f1) init)))))
 
@@ -145,7 +145,7 @@
 (defn- do-rfn [f1 k fkv]
   `(fn
      ([] (~f1))
-     ~(clojure.walk/postwalk
+     ~(walk/postwalk
        #(if (sequential? %)
           ((if (vector? %) vec identity)
            (core/remove #{k} %))
