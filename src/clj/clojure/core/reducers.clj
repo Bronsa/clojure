@@ -322,6 +322,11 @@
          (combinef (f1) (fjjoin t2)))))))
 
 (extend-protocol CollFold
+ nil
+ (coll-fold
+  [coll n combinef reducef]
+  (combinef))
+
  Object
  (coll-fold
   [coll n combinef reducef]
