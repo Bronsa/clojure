@@ -3991,7 +3991,7 @@
                              gmapseq (with-meta gmap {:tag 'clojure.lang.ISeq})
                              defaults (:or b)]
                          (loop [ret (-> bvec (conj gmap) (conj v)
-                                        (conj gmap) (conj `(if (seq? ~gmap) (clojure.lang.PersistentHashMap/create ~gmapseq) ~gmap))
+                                        (conj gmap) (conj `(if (seq? ~gmap) (clojure.lang.PersistentHashMap/create (seq ~gmapseq)) ~gmap))
                                         ((fn [ret]
                                            (if (:as b)
                                              (conj ret (:as b) gmap)
@@ -5871,11 +5871,12 @@
   {:added "1.0"})
 
 (add-doc-and-meta *read-eval*
-  "When set to logical false, the EvalReader (#=(...)) is disabled in the 
-  read/load in the thread-local binding.
-  Example: (binding [*read-eval* false] (read-string \"#=(eval (def x 3))\"))
+  "When set to logical true in the thread-local binding, the eval
+  reader (#=(...)) for arbitrary expressions is enabled in read/load.
+  Example:
+  (binding [*read-eval* true] (read-string \"#=(* 2 21)\"))
 
-  Defaults to true"
+  Defaults to false"
   {:added "1.0"})
 
 (defn future?
