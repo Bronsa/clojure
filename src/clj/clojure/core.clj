@@ -3389,7 +3389,12 @@
 (defn read
   "Reads the next object from stream, which must be an instance of
   java.io.PushbackReader or some derivee.  stream defaults to the
-  current value of *in* ."
+  current value of *in*.
+
+  Note that read can execute code (controlled by *read-eval*),
+  and as such should be used only with trusted sources.
+
+  For data structure interop use read-edn"
   {:added "1.0"
    :static true}
   ([]
@@ -3401,6 +3406,23 @@
   ([stream eof-error? eof-value recursive?]
    (. clojure.lang.LispReader (read stream (boolean eof-error?) eof-value recursive?))))
 
+(defn read-edn
+  "Reads the next object from stream, which must be an instance of
+  java.io.PushbackReader or some derivee.  stream defaults to the
+  current value of *in*.
+
+  Reads data in the edn format (subset of Clojure data):
+  http://edn-format.org"
+  {:added "1.5"}
+  ([]
+   (read-edn *in*))
+  ([stream]
+   (read-edn stream true nil))
+  ([stream eof-error? eof-value]
+   (read-edn stream eof-error? eof-value false))
+  ([stream eof-error? eof-value recursive?]
+     (. clojure.lang.EdnReader (read stream (boolean eof-error?) eof-value recursive?))))
+
 (defn read-line
   "Reads the next line from stream that is the current value of *in* ."
   {:added "1.0"
@@ -3411,10 +3433,23 @@
     (.readLine ^java.io.BufferedReader *in*)))
 
 (defn read-string
-  "Reads one object from the string s"
+  "Reads one object from the string s.
+
+  Note that read-string can execute code (controlled by *read-eval*),
+  and as such should be used only with trusted sources.
+
+  For data structure interop use read-edn-string"
   {:added "1.0"
    :static true}
   [s] (clojure.lang.RT/readString s))
+
+(defn read-edn-string
+  "Reads one object from the string s. Returns nil when s is nil or empty.
+
+  Reads data in the edn format (subset of Clojure data):
+  http://edn-format.org"
+  {:added "1.5"}
+  [s] (when (pos? (count s)) (clojure.lang.EdnReader/readString s)))
 
 (defn subvec
   "Returns a persistent vector of the items in vector from
@@ -5871,12 +5906,11 @@
   {:added "1.0"})
 
 (add-doc-and-meta *read-eval*
-  "When set to logical true in the thread-local binding, the eval
-  reader (#=(...)) for arbitrary expressions is enabled in read/load.
-  Example:
-  (binding [*read-eval* true] (read-string \"#=(* 2 21)\"))
+  "When set to logical false in the thread-local binding,
+  the eval reader (#=(...)) is disabled in read/load.
+  Example: (binding [*read-eval* false] (read-string \"#=(eval (def x 3))\"))
 
-  Defaults to false"
+  Defaults to true"
   {:added "1.0"})
 
 (defn future?
