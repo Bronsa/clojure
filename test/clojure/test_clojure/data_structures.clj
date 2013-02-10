@@ -11,7 +11,8 @@
 
 (ns clojure.test-clojure.data-structures
   (:use clojure.test
-        [clojure.test.generative :exclude (is)]))
+        [clojure.test.generative :exclude (is)])
+  (:require [clojure.test-clojure.generators :as cgen]))
 
 
 ;; *** Helper functions ***
@@ -23,7 +24,7 @@
 ;; *** Generative ***
 (defspec subcollection-counts-are-consistent
   identity
-  [^collection coll]
+  [^{:tag cgen/ednable-collection} coll]
   (let [n (count coll)]
     (dotimes [i n]
       (is (= n
@@ -647,7 +648,8 @@
       (hash-set nil 2) #{nil 2}
       (hash-set #{}) #{#{}}
       (hash-set 1 #{}) #{1 #{}}
-      (hash-set #{} 2) #{#{} 2} ))
+      (hash-set #{} 2) #{#{} 2}
+      (hash-set (Integer. -1)) (hash-set (Long. -1))))
 
 
 (deftest test-sorted-set

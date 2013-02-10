@@ -3394,7 +3394,7 @@
   Note that read can execute code (controlled by *read-eval*),
   and as such should be used only with trusted sources.
 
-  For data structure interop use read-edn"
+  For data structure interop use clojure.edn/read"
   {:added "1.0"
    :static true}
   ([]
@@ -3405,23 +3405,6 @@
    (read stream eof-error? eof-value false))
   ([stream eof-error? eof-value recursive?]
    (. clojure.lang.LispReader (read stream (boolean eof-error?) eof-value recursive?))))
-
-(defn read-edn
-  "Reads the next object from stream, which must be an instance of
-  java.io.PushbackReader or some derivee.  stream defaults to the
-  current value of *in*.
-
-  Reads data in the edn format (subset of Clojure data):
-  http://edn-format.org"
-  {:added "1.5"}
-  ([]
-   (read-edn *in*))
-  ([stream]
-   (read-edn stream true nil))
-  ([stream eof-error? eof-value]
-   (read-edn stream eof-error? eof-value false))
-  ([stream eof-error? eof-value recursive?]
-     (. clojure.lang.EdnReader (read stream (boolean eof-error?) eof-value recursive?))))
 
 (defn read-line
   "Reads the next line from stream that is the current value of *in* ."
@@ -3438,18 +3421,10 @@
   Note that read-string can execute code (controlled by *read-eval*),
   and as such should be used only with trusted sources.
 
-  For data structure interop use read-edn-string"
+  For data structure interop use clojure.edn/read-string"
   {:added "1.0"
    :static true}
   [s] (clojure.lang.RT/readString s))
-
-(defn read-edn-string
-  "Reads one object from the string s. Returns nil when s is nil or empty.
-
-  Reads data in the edn format (subset of Clojure data):
-  http://edn-format.org"
-  {:added "1.5"}
-  [s] (when (pos? (count s)) (clojure.lang.EdnReader/readString s)))
 
 (defn subvec
   "Returns a persistent vector of the items in vector from
@@ -5906,11 +5881,29 @@
   {:added "1.0"})
 
 (add-doc-and-meta *read-eval*
-  "When set to logical false in the thread-local binding,
-  the eval reader (#=(...)) is disabled in read/load.
-  Example: (binding [*read-eval* false] (read-string \"#=(eval (def x 3))\"))
+ "Defaults to true (or value specified by system property, see below)
+  ***This setting implies that the full power of the reader is in play,
+  including syntax that can cause code to execute. It should never be
+  used with untrusted sources. See also: clojure.edn/read.***
 
-  Defaults to true"
+  When set to logical false in the thread-local binding,
+  the eval reader (#=) and record/type literal syntax are disabled in read/load.
+  Example (will fail): (binding [*read-eval* false] (read-string \"#=(* 2 21)\"))
+
+  The default binding can be controlled by the system property
+  'clojure.read.eval' System properties can be set on the command line
+  like this:
+
+  java -Dclojure.read.eval=false ...
+
+  The system property can also be set to 'unknown' via
+  -Dclojure.read.eval=unknown, in which case the default binding
+  is :unknown and all reads will fail in contexts where *read-eval*
+  has not been explicitly bound to either true or false. This setting
+  can be a useful diagnostic tool to ensure that all of your reads
+  occur in considered contexts. You can also accomplish this in a
+  particular scope by binding *read-eval* to :unknown
+  "
   {:added "1.0"})
 
 (defn future?
