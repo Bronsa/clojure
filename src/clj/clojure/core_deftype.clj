@@ -16,6 +16,16 @@
   [ns]
   (.replace (str ns) \- \_))
 
+(defn ^:private throw-on-varargs
+  "Throws an exception if arglist contains a varargs declaration.
+  Protocol/interface method impls defined with deftype, defrecord, and reify
+  don't support varags."
+  [name arglist]
+  (when (some #(= '& %) arglist)
+    (throw (ex-info (format "In (%s %s)\nNo varargs support for definterface/defprotocol method sigs, and deftype, defrecord, and reify method impls."
+                            name (vec arglist))
+                    {:method-name name, :arglist arglist}))))
+
 ;for now, built on gen-interface
 (defmacro definterface
   "Creates a new Java interface with the given name and method sigs.
@@ -29,6 +39,7 @@
   [name & sigs]
   (let [tag (fn [x] (or (:tag (meta x)) Object))
         psig (fn [[name [& args]]]
+               (throw-on-varargs name args)
                (vector name (vec (map tag args)) (tag name) (map meta args)))
         cname (with-meta (symbol (str (namespace-munge *ns*) "." name)) (meta name))]
     `(let [] 
@@ -61,6 +72,7 @@
                        (disj 'Object 'java.lang.Object)
                        vec)
         methods (map (fn [[name params & body]]
+                       (throw-on-varargs name params)
                        (cons name (maybe-destructured params body)))
                      (apply concat (vals impls)))]
     (when-let [bad-opts (seq (remove #{:no-print} (keys opts)))]
@@ -605,6 +617,8 @@
                                   (if (vector? (first rs))
                                     (recur (conj as (first rs)) (next rs))
                                     [(seq as) (first rs)]))]
+                            (doseq [arglist arglists]
+                              (throw-on-varargs mname arglist))
                             (when (some #{0} (map count arglists))
                               (throw (IllegalArgumentException. (str "Protocol fn: " mname " must take at least one arg"))))
                             (assoc m (keyword mname)
