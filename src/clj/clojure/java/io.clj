@@ -37,6 +37,37 @@
   (^{:tag java.io.File, :added "1.2"} as-file [x] "Coerce argument to a file.")
   (^{:tag java.net.URL, :added "1.2"} as-url [x] "Coerce argument to a URL."))
 
+(defn- one-hex-escape-to-byte [escape]
+  (-> escape
+      (.substring 1 3)
+      (Integer/parseInt 16)
+      (#(if (< % 128) % (- % 256)))
+      byte))
+
+;; Section 2.5 of RFC 3986 'Uniform Resource Identifier (URI): Generic
+;; Syntax' says:
+;;
+;;     When a new URI scheme defines a component that represents
+;;     textual data consisting of characters from the Universal
+;;     Character Set [UCS], the data should first be encoded as octets
+;;     according to the UTF-8 character encoding [STD63]; then only
+;;     those octets that do not correspond to characters in the
+;;     unreserved set should be percent- encoded.
+;;
+;; Thus to convert a URL to a string, take consecutive sequences of
+;; %HH escape sequences, where HH are hex digits, convert them to
+;; bytes, and treat those bytes as strings encoded using UTF-8.
+
+(defn- escaped-utf8-urlstring->str [s]
+  (clojure.string/replace s
+                          #"((%..)+)"
+                          (fn [escapes]
+                            (String. (->> (first escapes)
+                                          (re-seq #"%..")
+                                          (map one-hex-escape-to-byte)
+                                          byte-array)
+                                     "UTF-8"))))
+
 (extend-protocol Coercions
   nil
   (as-file [_] nil)
@@ -54,16 +85,8 @@
   (as-url [u] u)
   (as-file [u]
     (if (= "file" (.getProtocol u))
-      (as-file
-        (clojure.string/replace
-          (.replace (.getFile u) \/ File/separatorChar)
-          #"%.."
-          (fn [escape]
-            (-> escape
-                (.substring 1 3)
-                (Integer/parseInt 16)
-                (char)
-                (str)))))
+      (as-file (escaped-utf8-urlstring->str
+                (.replace (.getFile u) \/ File/separatorChar)))
       (throw (IllegalArgumentException. (str "Not a file: " u)))))
 
   URI
