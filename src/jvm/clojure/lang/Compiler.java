@@ -1013,7 +1013,7 @@ static public abstract class HostExpr implements Expr, MaybePrimitiveExpr{
 		 return className;
 	 }
  */
-	static Class tagToClass(Object tag) {
+	public static Class tagToClass(Object tag) {
 		Class c = maybeClass(tag, true);
 		if(tag instanceof Symbol)
 			{

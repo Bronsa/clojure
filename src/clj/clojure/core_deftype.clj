@@ -599,7 +599,8 @@
             [opts sigs]))
         sigs (when sigs
                (reduce1 (fn [m s]
-                          (let [name-meta (meta (first s))
+                          (let [name-meta (update-in (meta (first s)) [:tag]
+                                                     #(when % (clojure.lang.Compiler$HostExpr/tagToClass %)))
                                 mname (with-meta (first s) nil)
                                 [arglists doc]
                                 (loop [as [] rs (rest s)]
