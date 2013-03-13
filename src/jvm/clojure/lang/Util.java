@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.lang.ref.SoftReference;
 import java.lang.ref.ReferenceQueue;
+import java.util.regex.Pattern;
 
 public class Util{
 static public boolean equiv(Object k1, Object k2){
@@ -30,6 +31,8 @@ static public boolean equiv(Object k1, Object k2){
 			return Numbers.equal((Number)k1, (Number)k2);
 		else if(k1 instanceof IPersistentCollection || k2 instanceof IPersistentCollection)
 			return pcequiv(k1,k2);
+		else if(k1 instanceof Pattern && k2 instanceof Pattern)
+			return equiv(((Pattern)k1).pattern(),((Pattern)k2).pattern());
 		return k1.equals(k2);
 		}
 	return false;
@@ -67,6 +70,14 @@ static EquivPred equivColl = new EquivPred(){
         }
     };
 
+static EquivPred equivPattern = new EquivPred(){
+        public boolean equiv(Object k1, Object k2) {
+            if(k1 instanceof Pattern && k2 instanceof Pattern)
+                return equiv(((Pattern)k1).pattern(),((Pattern)k2).pattern());
+            return k1.equals(k2);
+        }
+    };
+
 static public EquivPred equivPred(Object k1){
     if(k1 == null)
         return equivNull;
@@ -76,6 +87,8 @@ static public EquivPred equivPred(Object k1){
         return equivEquals;
     else if (k1 instanceof Collection || k1 instanceof Map)
         return equivColl;
+    else if (k1 instanceof Pattern)
+        return equivPattern;
     return equivEquals;
 }
 

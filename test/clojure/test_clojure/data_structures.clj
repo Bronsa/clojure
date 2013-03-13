@@ -59,6 +59,13 @@
   (is (== 1/1000 0.001))
   (is (not= 2/3 0.6666666666666666))
 
+  ; regex patterns
+  (is (= #"11" #"11"))
+  (is (= #"abcd\.\+" #"abcd\.\+"))
+
+  (is (not= #"11" #"12"))
+  (is (not= #"defg" #"def"))
+
   ; vectors equal other seqs by items equality
   (are [x y] (= x y)
       '() []        ; regression fixed in r1208; was not equal
