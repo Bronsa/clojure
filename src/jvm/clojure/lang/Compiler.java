@@ -1862,7 +1862,9 @@ static class ConstantExpr extends LiteralExpr{
 				return NumberExpr.parse((Number)v);
 			else if(v instanceof String)
 				return new StringExpr((String) v);
-			else if(v instanceof IPersistentCollection && ((IPersistentCollection) v).count() == 0)
+			else if(v instanceof IPersistentCollection
+                    && (((IPersistentCollection) v).count() == 0)
+                    && (v instanceof IObj ? (((IObj) v).meta() == null) : true))
 				return new EmptyExpr(v);
 			else
 				return new ConstantExpr(v);
