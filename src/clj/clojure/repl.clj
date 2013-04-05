@@ -162,17 +162,48 @@ itself (not its value) is returned. The reader macro #'x expands to (var x)."}})
   [n]
   `(println (or (source-fn '~n) (str "Source not found"))))
 
+(defn- unresolve
+  "Given a var, return a seq of all symbols that resolve to the var
+from the current namespace *ns*."
+  [^clojure.lang.Var var]
+  (let [home-ns (.ns var)
+        sym-name-str (second (re-find #"/(.*)$" (str var)))]
+    (sort-by
+     #(count (str %))
+     (concat
+      ;; The symbols in the current ns that map to the var, if any.
+      (->> (ns-map *ns*)
+           (filter (fn [[k v]] (= var v)))
+           (map first))
+      ;; The full ns/name symbol that resolves to the var.
+      (list (symbol (str home-ns) sym-name-str))
+      ;; There might be one or more aliases for the symbol's home
+      ;; namespace defined in the current namespace.
+      (->> (ns-aliases *ns*)
+           (filter (fn [[ns-alias ns]] (= ns home-ns)))
+           (map first)
+           (map (fn [ns-alias-symbol]
+                  (symbol (str ns-alias-symbol) sym-name-str))))))))
+
 (defn apropos
   "Given a regular expression or stringable thing, return a seq of
 all definitions in all currently-loaded namespaces that match the
-str-or-pattern."
+str-or-pattern.  Searches through all symbols in the current
+namespace, but only public symbols of other namespaces."
   [str-or-pattern]
   (let [matches? (if (instance? java.util.regex.Pattern str-or-pattern)
                    #(re-find str-or-pattern (str %))
                    #(.contains (str %) (str str-or-pattern)))]
-    (mapcat (fn [ns]
-              (filter matches? (keys (ns-publics ns))))
-            (all-ns))))
+    (->> (set
+          (mapcat (fn [ns]
+                    (map second
+                         (filter (fn [[s v]] (matches? s))
+                                 (if (= ns *ns*)
+                                   (concat (ns-interns ns) (ns-refers ns))
+                                   (ns-publics ns)))))
+                  (all-ns)))
+         (map #(first (unresolve %)))
+         sort)))
 
 (defn dir-fn
   "Returns a sorted seq of symbols naming public vars in
