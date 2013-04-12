@@ -12,7 +12,11 @@
 (ns clojure.test-clojure.data-structures
   (:use clojure.test
         [clojure.test.generative :exclude (is)])
-  (:require [clojure.test-clojure.generators :as cgen]))
+  (:require
+   [clojure.data.generators :as gen]
+   [clojure.test.generative :only (defspec)]
+   [clojure.test-clojure.generators :as cgen])
+  (:import java.util.Map))
 
 
 ;; *** Helper functions ***
@@ -372,6 +376,21 @@
 
 
 ;; *** Maps (IPersistentMap) ***
+
+(defn maps-act-the-same
+  [^Map m1 ^Map m2]
+  (let [k (first (keys m1))
+        missing (Object.)]
+    (are [r1 r2] (= r1 r2)
+         ;; one could add many more assertions here
+         (get m1 k) (get m2 k)
+         (get m1 missing) (get m2 missing)
+         (.containsKey m1 k) (.containsKey m2 k))))
+
+(defspec map-works-like-array-map
+  #(apply array-map (mapcat identity %))
+  [^{:tag (hash-map short short)} m]
+  (maps-act-the-same m %))
 
 (deftest test-find
   (are [x y] (= x y)
