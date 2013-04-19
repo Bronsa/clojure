@@ -649,3 +649,21 @@ Math/pow overflows to Infinity."
       (assert (= a
                  (+ (* q d) r)
                  (unchecked-add (unchecked-multiply q d) r))))))
+
+(deftest hash-same-for-equal-numbers
+  (letfn [(hash-same [n types]
+            (let [s (map (fn [convert-fn] (convert-fn n)) types)]
+              (if (apply = s)
+                (apply = (map hash s))
+                ;; If they are not all equal, then we don't care if
+                ;; their hash values are equal or not.
+                true)))]
+    (testing "hash same for equal integer types"
+      (are [n types] (hash-same n types)
+           -1 [byte short int long bigint biginteger]
+           Byte/MIN_VALUE [byte short int long bigint biginteger]
+           Byte/MAX_VALUE [byte short int long bigint biginteger]
+           Long/MIN_VALUE [long bigint biginteger]
+           Long/MAX_VALUE [long bigint biginteger]
+           12345678901234567890 [bigint biginteger]
+           -88888888888888888888N [bigint biginteger]))))
