@@ -18,13 +18,14 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 
 public class Reflector{
 
 public static Object invokeInstanceMethod(Object target, String methodName, Object[] args) {
 	Class c = target.getClass();
-	List methods = getMethods(c, args.length, methodName, false);
+	List methods = getMethods(c, methodName, false);
 	return invokeMatchingMethod(methodName, methods, target, args);
 }
 
@@ -44,18 +45,26 @@ private static String noMethodReport(String methodName, Object target){
 	 return "No matching method found: " + methodName
 			+ (target==null?"":" for " + target.getClass());
 }
+
+private static String arityMismatchReport(String methodName, Object target) {
+    return methodName + (target == null?"": " for " + target.getClass());
+}
+
+private static String parameterTypeMismatchReport(String methodName, Object target) {
+    StringBuilder builder = new StringBuilder();
+    builder.append("No matching method found: ").append(methodName).append((target == null?"": " for " + target.getClass()))
+            .append(" because the parameter types did not match.");
+    return builder.toString();
+}
+
 static Object invokeMatchingMethod(String methodName, List methods, Object target, Object[] args)
 		{
 	Method m = null;
 	Object[] boxedArgs = null;
+    boolean arityMatch = false;
 	if(methods.isEmpty())
 		{
 		throw new IllegalArgumentException(noMethodReport(methodName,target));
-		}
-	else if(methods.size() == 1)
-		{
-		m = (Method) methods.get(0);
-		boxedArgs = boxArgs(m.getParameterTypes(), args);
 		}
 	else //overloaded w/same arity
 		{
@@ -65,6 +74,9 @@ static Object invokeMatchingMethod(String methodName, List methods, Object targe
 			m = (Method) i.next();
 
 			Class[] params = m.getParameterTypes();
+            if (params.length == args.length) {
+                arityMatch = true;
+            }
 			if(isCongruent(params, args))
 				{
 				if(foundm == null || Compiler.subsumes(params, foundm.getParameterTypes()))
@@ -76,8 +88,15 @@ static Object invokeMatchingMethod(String methodName, List methods, Object targe
 			}
 		m = foundm;
 		}
-	if(m == null)
-		throw new IllegalArgumentException(noMethodReport(methodName,target));
+	if(m == null) {
+        if (!arityMatch) {
+            throw new ArityException(args.length, arityMismatchReport(methodName, target));
+        } else {
+            throw new IllegalArgumentException(parameterTypeMismatchReport(methodName, target));
+        }
+
+    }
+
 
 	if(!Modifier.isPublic(m.getDeclaringClass().getModifiers()))
 		{
@@ -353,16 +372,15 @@ static public Field getField(Class c, String name, boolean getStatics){
 	return null;
 }
 
-static public List getMethods(Class c, int arity, String name, boolean getStatics){
+static public List getMethods(Class c, String name, boolean getStatics){
 	Method[] allmethods = c.getMethods();
-	ArrayList methods = new ArrayList();
-	ArrayList bridgeMethods = new ArrayList();
+	LinkedList methods = new LinkedList();
+	LinkedList bridgeMethods = new LinkedList();
 	for(int i = 0; i < allmethods.length; i++)
 		{
 		Method method = allmethods[i];
 		if(name.equals(method.getName())
-		   && Modifier.isStatic(method.getModifiers()) == getStatics
-		   && method.getParameterTypes().length == arity)
+		   && Modifier.isStatic(method.getModifiers()) == getStatics)
 			{
 			try
 				{
@@ -388,15 +406,14 @@ static public List getMethods(Class c, int arity, String name, boolean getStatic
 
 	if(methods.isEmpty())
 		methods.addAll(bridgeMethods);
-	
+
 	if(!getStatics && c.isInterface())
 		{
 		allmethods = Object.class.getMethods();
 		for(int i = 0; i < allmethods.length; i++)
 			{
 			if(name.equals(allmethods[i].getName())
-			   && Modifier.isStatic(allmethods[i].getModifiers()) == getStatics
-			   && allmethods[i].getParameterTypes().length == arity)
+			   && Modifier.isStatic(allmethods[i].getModifiers()) == getStatics)
 				{
 				methods.add(allmethods[i]);
 				}
@@ -405,6 +422,16 @@ static public List getMethods(Class c, int arity, String name, boolean getStatic
 	return methods;
 }
 
+static public List getMethods(Class c, int arity, String name, boolean getStatics){
+    List methods = getMethods(c, name, getStatics);
+    for(Iterator i = methods.iterator(); i.hasNext();) {
+        Method method = (Method) i.next();
+        if (method.getParameterTypes().length != arity) {
+            i.remove();
+        }
+    }
+    return methods;
+}
 
 static Object boxArg(Class paramType, Object arg){
 	if(!paramType.isPrimitive())
