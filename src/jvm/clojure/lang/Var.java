@@ -77,7 +77,6 @@ static final ThreadLocal<Frame> dvals = new ThreadLocal<Frame>(){
 	}
 };
 
-static public volatile int rev = 0;
 
 static Keyword privateKey = Keyword.intern(null, "private");
 static IPersistentMap privateMeta = new PersistentArrayMap(new Object[]{privateKey, Boolean.TRUE});
@@ -190,7 +189,6 @@ Var(Namespace ns, Symbol sym){
 Var(Namespace ns, Symbol sym, Object root){
 	this(ns, sym);
 	this.root = root;
-	++rev;
 }
 
 public boolean isBound(){
@@ -284,7 +282,6 @@ synchronized public void bindRoot(Object root){
 	validate(getValidator(), root);
 	Object oldroot = this.root;
 	this.root = root;
-	++rev;
         alterMeta(dissoc, RT.list(macroKey));
     notifyWatches(oldroot,this.root);
 }
@@ -293,13 +290,11 @@ synchronized void swapRoot(Object root){
 	validate(getValidator(), root);
 	Object oldroot = this.root;
 	this.root = root;
-	++rev;
     notifyWatches(oldroot,root);
 }
 
 synchronized public void unbindRoot(){
 	this.root = new Unbound(this);
-	++rev;
 }
 
 synchronized public void commuteRoot(IFn fn) {
@@ -307,7 +302,6 @@ synchronized public void commuteRoot(IFn fn) {
 	validate(getValidator(), newRoot);
 	Object oldroot = root;
 	this.root = newRoot;
-	++rev;
     notifyWatches(oldroot,newRoot);
 }
 
@@ -316,7 +310,6 @@ synchronized public Object alterRoot(IFn fn, ISeq args) {
 	validate(getValidator(), newRoot);
 	Object oldroot = root;
 	this.root = newRoot;
-	++rev;
     notifyWatches(oldroot,newRoot);
 	return newRoot;
 }
