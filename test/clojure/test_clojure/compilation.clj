@@ -172,3 +172,11 @@
   
   (should-print-err-message #"(?s).*k is not matching primitive.*"
     #(loop [k (clojure.test-clojure.compilation/primfn)] (recur :foo))))
+
+(deftest CLJ-1184-do-in-non-list-test
+  (testing "do in a vector throws an exception"
+    (is (thrown? Exception
+                 (eval '[do 1 2 3]))))
+  (testing "do in a set throws an exception"
+    (is (thrown? Exception
+                 (eval '#{do})))))

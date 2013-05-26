@@ -6627,7 +6627,7 @@ public static Object eval(Object form, boolean freshLoader) {
 		try
 			{
 			form = macroexpand(form);
-			if(form instanceof IPersistentCollection && Util.equals(RT.first(form), DO))
+			if(form instanceof ISeq && Util.equals(RT.first(form), DO))
 				{
 				ISeq s = RT.next(form);
 				for(; RT.next(s) != null; s = RT.next(s))
