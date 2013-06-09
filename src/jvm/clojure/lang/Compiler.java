@@ -107,7 +107,7 @@ static final public IPersistentMap specials = PersistentHashMap.create(
 		CASE, new CaseExpr.Parser(),
 		LET, new LetExpr.Parser(),
 		LETFN, new LetFnExpr.Parser(),
-		DO, new BodyExpr.Parser(),
+		DO, new DoExpr.Parser(),
 		FN, null,
 		QUOTE, new ConstantExpr.Parser(),
 		THE_VAR, new TheVarExpr.Parser(),
@@ -5709,8 +5709,6 @@ public static class BodyExpr implements Expr, MaybePrimitiveExpr{
 	static class Parser implements IParser{
 		public Expr parse(C context, Object frms) {
 			ISeq forms = (ISeq) frms;
-			if(Util.equals(RT.first(forms), DO))
-				forms = RT.next(forms);
 			PersistentVector exprs = PersistentVector.EMPTY;
 			for(; forms != null; forms = forms.next())
 				{
@@ -5772,6 +5770,15 @@ public static class BodyExpr implements Expr, MaybePrimitiveExpr{
 	private Expr lastExpr(){
 		return (Expr) exprs.nth(exprs.count() - 1);
 	}
+}
+
+
+public static class DoExpr {
+    static class Parser implements IParser {
+        public Expr parse (C context, Object frms) {
+            return (new BodyExpr.Parser()).parse(context, ((ISeq)frms).next());
+        }
+    }
 }
 
 public static class BindingInit{

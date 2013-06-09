@@ -56,6 +56,8 @@
             (reset! a (+ @a 1))   ; 3
             @a))  3 )
 
+  ((fn [do] do) 1) 1
+
   ; identity (= (do x) x)
   (maintains-identity (fn [_] (do _))) )
 
