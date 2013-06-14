@@ -4317,7 +4317,7 @@
                                      (let [~bind (first ~gxs)]
                                        ~(do-mod mod-pairs)))))))))))]
     `(let [iter# ~(emit-bind (to-groups seq-exprs))]
-        (iter# ~(second seq-exprs)))))
+        (iter# (lazy-seq ~(second seq-exprs))))))
 
 (defmacro comment
   "Ignores body, yields nil"
