@@ -6251,11 +6251,11 @@ public static class RecurExpr implements Expr, MaybePrimitiveExpr{
 
 			ISeq form = (ISeq) frm;
 			IPersistentVector loopLocals = (IPersistentVector) LOOP_LOCALS.deref();
-			if(context != C.RETURN || loopLocals == null)
+            if(NO_RECUR.deref() != null)
+                throw new UnsupportedOperationException("Cannot recur across try");
+            if(context != C.RETURN || loopLocals == null)
 				throw new UnsupportedOperationException("Can only recur from tail position");
-                        if(NO_RECUR.deref() != null)
-                            throw new UnsupportedOperationException("Cannot recur across try");
-			PersistentVector args = PersistentVector.EMPTY;
+            PersistentVector args = PersistentVector.EMPTY;
 			for(ISeq s = RT.seq(form.next()); s != null; s = s.next())
 				{
 				args = args.cons(analyze(C.EXPRESSION, s.first()));
