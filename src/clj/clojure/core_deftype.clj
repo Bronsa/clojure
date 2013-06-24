@@ -168,7 +168,8 @@
         hinted-fields fields
         fields (vec (map #(with-meta % nil) fields))
         base-fields fields
-        fields (conj fields '__meta '__extmap)
+        fields (conj fields '__meta '^:unsynchronized-mutable __hash
+                     '^:unsynchronized-mutable __hasheq '__extmap)
         type-hash (hash classname)]
     (when (some #{:volatile-mutable :unsynchronized-mutable} (mapcat (comp keys meta) hinted-fields))
       (throw (IllegalArgumentException. ":volatile-mutable or :unsynchronized-mutable not supported for record fields")))
@@ -180,8 +181,14 @@
       (eqhash [[i m]] 
         [(conj i 'clojure.lang.IHashEq)
          (conj m
-               `(hasheq [this#] (bit-xor ~type-hash (clojure.lang.APersistentMap/mapHasheq this#)))
-               `(hashCode [this#] (clojure.lang.APersistentMap/mapHash this#))
+               `(hasheq [this#] (or ~'__hasheq
+                                    (let [h# (bit-xor ~type-hash (clojure.lang.APersistentMap/mapHasheq this#))]
+                                      (set! ~'__hasheq h#)
+                                      h#)))
+               `(hashCode [this#] (or ~'__hash
+                                      (let [h# (clojure.lang.APersistentMap/mapHash this#)]
+                                        (set! ~'__hash h#)
+                                        h#)))
                `(equals [this# ~gs] (clojure.lang.APersistentMap/mapEquals this# ~gs)))])
       (iobj [[i m]] 
             [(conj i 'clojure.lang.IObj)
@@ -254,8 +261,9 @@
                        `(entrySet [this#] (set this#)))])
       ]
      (let [[i m] (-> [interfaces methods] irecord eqhash iobj ilookup imap ijavamap)]
-       `(deftype* ~tagname ~classname ~(conj hinted-fields '__meta '__extmap) 
-          :implements ~(vec i) 
+       `(deftype* ~tagname ~classname ~(conj hinted-fields '__meta '^:unsynchronized-mutable __hash
+                                             '^:unsynchronized-mutable __hasheq '__extmap)
+          :implements ~(vec i)
           ~@m))))))
 
 (defn- build-positional-factory
@@ -290,7 +298,7 @@
   [fields]
   (when-not (vector? fields)
     (throw (AssertionError. "No fields vector given.")))
-  (let [specials #{'__meta '__extmap}]
+  (let [specials #{'__meta '__hash '__hasheq '__extmap}]
     (when (some specials fields)
       (throw (AssertionError. (str "The names in " specials " cannot be used as field names for types or records."))))))
 
@@ -354,9 +362,9 @@
   Two constructors will be defined, one taking the designated fields
   followed by a metadata map (nil for none) and an extension field
   map (nil for none), and one taking only the fields (using nil for
-  meta and extension fields). Note that the field names __meta
-  and __extmap are currently reserved and should not be used when
-  defining your own records.
+  meta and extension fields). Note that the field names __meta,
+  __extmap, __hash and __hasheq are currently reserved and should not
+  be used when defining your own records.
 
   Given (defrecord TypeName ...), two factory functions will be
   defined: ->TypeName, taking positional parameters for the fields,
@@ -457,8 +465,8 @@
   writes the .class file to the *compile-path* directory.
 
   One constructor will be defined, taking the designated fields.  Note
-  that the field names __meta and __extmap are currently reserved and
-  should not be used when defining your own types.
+  that the field names __meta, __extmap, __hash and __hasheq are currently
+  reserved and should not be used when defining your own types.
 
   Given (deftype TypeName ...), a factory function called ->TypeName
   will be defined, taking positional parameters for the fields"

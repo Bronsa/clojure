@@ -7433,7 +7433,11 @@ static public class NewInstanceExpr extends ObjExpr{
 			//use array map to preserve ctor order
 			ret.closes = new PersistentArrayMap(closesvec);
 			ret.fields = fmap;
-			for(int i=fieldSyms.count()-1;i >= 0 && (((Symbol)fieldSyms.nth(i)).name.equals("__meta") || ((Symbol)fieldSyms.nth(i)).name.equals("__extmap"));--i)
+			for(int i=fieldSyms.count()-1;i >= 0 && (((Symbol)fieldSyms.nth(i)).name.equals("__meta")
+                                                     || ((Symbol)fieldSyms.nth(i)).name.equals("__extmap")
+                                                     || ((Symbol)fieldSyms.nth(i)).name.equals("__hash")
+                                                     || ((Symbol)fieldSyms.nth(i)).name.equals("__hasheq")
+                                                     );--i)
 				ret.altCtorDrops++;
 			}
 		//todo - set up volatiles
@@ -7673,8 +7677,10 @@ static public class NewInstanceExpr extends ObjExpr{
 							}
 						}
 
-				mv.visitInsn(ACONST_NULL);
-				mv.visitVarInsn(ALOAD, 0);
+				mv.visitInsn(ACONST_NULL); //__meta
+                mv.visitInsn(ACONST_NULL); //__hash
+                mv.visitInsn(ACONST_NULL); //__hasheq
+                mv.visitVarInsn(ALOAD, 0); //__ext
 				mv.visitMethodInsn(INVOKESTATIC, "clojure/lang/RT", "seqOrElse", "(Ljava/lang/Object;)Ljava/lang/Object;");
 				mv.visitMethodInsn(INVOKESPECIAL, className, "<init>", ctor.getDescriptor());
 				mv.visitInsn(ARETURN);

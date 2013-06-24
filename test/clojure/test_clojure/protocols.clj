@@ -38,7 +38,7 @@
 (defrecord TestRecord [a b])
 (defn r
   ([a b] (TestRecord. a b))
-  ([a b meta ext] (TestRecord. a b meta ext)))
+  ([a b meta ext] (TestRecord. a b meta nil nil ext)))
 (defrecord MapEntry [k v]
   java.util.Map$Entry
   (getKey [_] k)
