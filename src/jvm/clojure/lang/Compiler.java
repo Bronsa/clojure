@@ -78,6 +78,8 @@ static final Symbol IDENTITY = Symbol.intern("clojure.core", "identity");
 static final Symbol _AMP_ = Symbol.intern("&");
 static final Symbol ISEQ = Symbol.intern("clojure.lang.ISeq");
 
+static final Keyword SUPER_CLASS = Keyword.intern(null, "super-class");
+static final Keyword CTOR_ARGS = Keyword.intern(null, "ctor-args");
 static final Keyword loadNs = Keyword.intern(null, "load-ns");
 static final Keyword inlineKey = Keyword.intern(null, "inline");
 static final Keyword inlineAritiesKey = Keyword.intern(null, "inline-arities");
@@ -2504,6 +2506,33 @@ static String getTypeStringForArgs(IPersistentVector args){
 	return sb.toString();
 }
 
+static Constructor getConstructor(Class c, IPersistentVector args) {
+    Constructor[] allctors = c.getConstructors();
+    ArrayList ctors = new ArrayList();
+    ArrayList<Class[]> params = new ArrayList();
+    ArrayList<Class> rets = new ArrayList();
+    for(int i = 0; i < allctors.length; i++)
+        {
+			Constructor ctor = allctors[i];
+			if(ctor.getParameterTypes().length == args.count())
+				{
+                    ctors.add(ctor);
+                    params.add(ctor.getParameterTypes());
+                    rets.add(c);
+				}
+        }
+    if(ctors.isEmpty())
+        throw new IllegalArgumentException("No matching ctor found for " + c);
+
+    int ctoridx = 0;
+    if(ctors.size() > 1)
+        {
+			ctoridx = getMatchingParams(c.getName(), params, args, rets);
+        }
+
+    return ctoridx >= 0 ? (Constructor) ctors.get(ctoridx) : null;
+}
+
 static int getMatchingParams(String methodName, ArrayList<Class[]> paramlists, IPersistentVector argexprs,
                              List<Class> rets)
 		{
@@ -2572,30 +2601,7 @@ public static class NewExpr implements Expr{
 	public NewExpr(Class c, IPersistentVector args, int line, int column) {
 		this.args = args;
 		this.c = c;
-		Constructor[] allctors = c.getConstructors();
-		ArrayList ctors = new ArrayList();
-		ArrayList<Class[]> params = new ArrayList();
-		ArrayList<Class> rets = new ArrayList();
-		for(int i = 0; i < allctors.length; i++)
-			{
-			Constructor ctor = allctors[i];
-			if(ctor.getParameterTypes().length == args.count())
-				{
-				ctors.add(ctor);
-				params.add(ctor.getParameterTypes());
-				rets.add(c);
-				}
-			}
-		if(ctors.isEmpty())
-			throw new IllegalArgumentException("No matching ctor found for " + c);
-
-		int ctoridx = 0;
-		if(ctors.size() > 1)
-			{
-			ctoridx = getMatchingParams(c.getName(), params, args, rets);
-			}
-
-		this.ctor = ctoridx >= 0 ? (Constructor) ctors.get(ctoridx) : null;
+		this.ctor = getConstructor(c, args);
 		if(ctor == null && RT.booleanCast(RT.WARN_ON_REFLECTION.deref()))
 			{
 			RT.errPrintWriter()
@@ -4191,6 +4197,8 @@ static public class ObjExpr implements Expr{
 	IPersistentVector protocolCallsites;
 	IPersistentSet varCallsites;
 	boolean onceOnly = false;
+	boolean isDefclass = false;
+	IPersistentVector ctor_args = PersistentVector.EMPTY;
 
 	Object src;
 
@@ -4288,6 +4296,8 @@ static public class ObjExpr implements Expr{
 			LocalBinding lb = (LocalBinding) s.first();
 			if(lb.getPrimitiveType() != null)
 				tv = tv.cons(Type.getType(lb.getPrimitiveType()));
+			else if (isDefclass && lb.hasJavaClass() && isDeftype())
+				tv = tv.cons(Type.getType(lb.getJavaClass()));
 			else
 				tv = tv.cons(OBJECT_TYPE);
 			}
@@ -4402,7 +4412,17 @@ static public class ObjExpr implements Expr{
 		ctorgen.visitLabel(start);
 		ctorgen.loadThis();
 //		if(superName != null)
+		if(!isDefclass)
 			ctorgen.invokeConstructor(Type.getObjectType(superName), voidctor);
+		else {
+			Constructor ctor = getConstructor(RT.classForName(superName.replace('/', '.')), ctor_args);
+
+			MethodExpr.emitTypedArgs(isDeftype() ? new ObjExpr(tag) : this, ctorgen, ctor.getParameterTypes(), ctor_args);
+
+			Method superCtor = new Method("<init>", Type.VOID_TYPE, Type.getType(ctor).getArgumentTypes());
+			ctorgen.invokeConstructor(Type.getObjectType(superName), superCtor);
+        }
+
 //		else if(isVariadic()) //RestFn ctor takes reqArity arg
 //			{
 //			ctorgen.push(variadicMethod.reqParms.count());
@@ -7955,9 +7975,15 @@ static public class NewInstanceExpr extends ObjExpr{
 
 
 		rform = RT.next(rform);
+		IPersistentMap opts = PersistentHashMap.EMPTY;
+		while(rform != null && rform.first() instanceof Keyword)
+			{
+			opts = opts.assoc(rform.first(), RT.second(rform));
+			rform = rform.next().next();
+			}
 
 
-		ObjExpr ret = build(interfaces, null, null, classname, Symbol.intern(classname), null, rform, frm, null);
+		ObjExpr ret = build(interfaces, null, null, classname, Symbol.intern(classname), null, rform, frm, opts);
 		if(frm instanceof IObj && ((IObj) frm).meta() != null)
 			return new MetaExpr(ret, MapExpr
 					.parse(context == C.EVAL ? context : C.EXPRESSION, ((IObj) frm).meta()));
@@ -8017,7 +8043,13 @@ static public class NewInstanceExpr extends ObjExpr{
 				throw new IllegalArgumentException("only interfaces are supported, had: " + c.getName());
 			interfaces = interfaces.cons(c);
 			}
-		Class superClass = Object.class;
+
+		Class superClass = HostExpr.maybeClass(RT.get(opts, SUPER_CLASS, Object.class), true);
+		if(superClass == null || IRecord.class.isAssignableFrom(superClass) || IType.class.isAssignableFrom(superClass))
+			throw new IllegalArgumentException("Can't extend class: " + (RT.get(opts, SUPER_CLASS)));
+
+		ret.isDefclass = superClass != Object.class;
+
 		Map[] mc = gatherMethods(superClass,RT.seq(interfaces));
 		Map overrideables = mc[0];
 		Map covariants = mc[1];
@@ -8060,6 +8092,32 @@ static public class NewInstanceExpr extends ObjExpr{
 				methods = RT.conj(methods, m);
 				}
 
+			if(ret.isDefclass) {
+				try {
+					PathNode pnode =  new PathNode(PATHTYPE.PATH, (PathNode) CLEAR_PATH.get());
+					Var.pushThreadBindings(
+							RT.mapUniqueKeys(METHOD, new NewInstanceMethod(ret, ret.isDeftype() ? null : (ObjMethod) METHOD.deref()),
+							       LOCAL_ENV, LOCAL_ENV.deref(),
+							       LOOP_LOCALS, null,
+							       NEXT_LOCAL_NUM, 1,
+							       CLEAR_PATH, pnode,
+							       CLEAR_ROOT, pnode,
+							       CLEAR_SITES, PersistentHashMap.EMPTY));
+					PersistentVector args = PersistentVector.EMPTY;
+					if(ret.isDeftype())
+						for(int i=0;i<fieldSyms.count();i++)
+							{
+							Symbol sym = (Symbol) fieldSyms.nth(i);
+							LocalBinding lb = registerLocal(sym, null, new MethodParamExpr(tagClass(tagOf(sym))),false);
+							lb.canBeCleared = false;
+							}
+					for(ISeq s = RT.seq(RT.get(opts, CTOR_ARGS)); s != null; s = s.next())
+						args = args.cons(analyze(C.EXPRESSION, s.first()));
+					ret.ctor_args = args;
+				} finally {
+					Var.popThreadBindings();
+				}
+			}
 
 			ret.methods = methods;
 			ret.keywords = (IPersistentMap) KEYWORDS.deref();
