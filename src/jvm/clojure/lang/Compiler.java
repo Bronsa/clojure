@@ -1475,6 +1475,7 @@ static class InstanceMethodExpr extends MethodExpr{
 	public final boolean tailPosition;
 	public final java.lang.reflect.Method method;
     Class jc;
+	public boolean compileStatic = false;
 
 	final static Method invokeInstanceMethodMethod =
 			Method.getMethod("Object invokeInstanceMethod(Object,String,Object[])");
@@ -1535,6 +1536,14 @@ static class InstanceMethodExpr extends MethodExpr{
 						.format("Reflection warning, %s:%d:%d - call to method %s on %s can't be resolved (argument types: %s).\n",
 							SOURCE_PATH.deref(), line, column, methodName, target.getJavaClass().getName(), getTypeStringForArgs(args));
 					}
+				if (method != null && target instanceof LocalBindingExpr)
+					{
+					LocalBindingExpr t = (LocalBindingExpr) target;
+					this.compileStatic = t.b.idx == 0
+					    && allowProtected
+					    && method.getDeclaringClass().isAssignableFrom(t.b.getJavaClass().getSuperclass())
+					    && t.b.getJavaClass().getSuperclass() == c;
+					}
 				}
 			}
 		else
@@ -1583,7 +1592,8 @@ static class InstanceMethodExpr extends MethodExpr{
 			Type type = Type.getType(method.getDeclaringClass());
 			target.emit(C.EXPRESSION, objx, gen);
 			//if(!method.getDeclaringClass().isInterface())
-			gen.checkCast(type);
+			if (!compileStatic)
+				gen.checkCast(type);
 			MethodExpr.emitTypedArgs(objx, gen, method.getParameterTypes(), args);
 			gen.visitLineNumber(line, gen.mark());
 			if(tailPosition && !objx.canBeDirect)
@@ -1595,7 +1605,12 @@ static class InstanceMethodExpr extends MethodExpr{
 			if(method.getDeclaringClass().isInterface())
 				gen.invokeInterface(type, m);
 			else
-				gen.invokeVirtual(type, m);
+				{
+				if(compileStatic)
+					gen.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(method.getDeclaringClass()), methodName, Type.getMethodDescriptor(method));
+				else
+					gen.invokeVirtual(type, m);
+				}
 			}
 		else
 			throw new UnsupportedOperationException("Unboxed emit of unknown member");
@@ -1607,7 +1622,8 @@ static class InstanceMethodExpr extends MethodExpr{
 			Type type = Type.getType(method.getDeclaringClass());
 			target.emit(C.EXPRESSION, objx, gen);
 			//if(!method.getDeclaringClass().isInterface())
-			gen.checkCast(type);
+			if (!compileStatic)
+				gen.checkCast(type);
 			MethodExpr.emitTypedArgs(objx, gen, method.getParameterTypes(), args);
 			gen.visitLineNumber(line, gen.mark());
 			if(context == C.RETURN)
@@ -1619,7 +1635,12 @@ static class InstanceMethodExpr extends MethodExpr{
 			if(method.getDeclaringClass().isInterface())
 				gen.invokeInterface(type, m);
 			else
-				gen.invokeVirtual(type, m);
+				{
+				if(compileStatic)
+					gen.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(method.getDeclaringClass()), methodName, Type.getMethodDescriptor(method));
+				else
+					gen.invokeVirtual(type, m);
+				}
 			//if(context != C.STATEMENT || method.getReturnType() == Void.TYPE)
 			HostExpr.emitBoxReturn(objx, gen, method.getReturnType());
 			}
