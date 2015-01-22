@@ -175,6 +175,10 @@ static Object invokeMatchingMethod(String methodName, List methods, Object targe
 
 // DEPRECATED - replaced by getAsMethodOfAccessibleBase()
 public static Method getAsMethodOfPublicBase(Class c, Method m){
+    return getAsMethodOfPublicBase(c, m, false);
+}
+
+public static Method getAsMethodOfPublicBase(Class c, Method m, boolean allowProtected){
 	for(Class iface : c.getInterfaces())
 		{
 		for(Method im : iface.getMethods())
@@ -185,17 +189,17 @@ public static Method getAsMethodOfPublicBase(Class c, Method m){
 				}
 			}
 		}
-	Class sc = c.getSuperclass();
-	if(sc == null)
-		return null;
-	for(Method scm : sc.getMethods())
+	for(Method scm : allowProtected ? c.getDeclaredMethods() : c.getMethods())
 		{
 		if(isMatch(scm, m))
 			{
 			return scm;
 			}
 		}
-	return getAsMethodOfPublicBase(sc, m);
+	Class sc = c.getSuperclass();
+	if(sc == null)
+		return null;
+	return getAsMethodOfPublicBase(sc, m, allowProtected);
 }
 
 // DEPRECATED - replaced by isAccessibleMatch()
@@ -484,7 +488,22 @@ public static Object invokeInstanceMember(String name, Object target, Object... 
 
 
 static public Field getField(Class c, String name, boolean getStatics){
+    return getField(c, name, getStatics, false);
+}
+
+static public Field getField(Class c, String name, boolean getStatics, boolean allowProtected) {
 	Field[] allfields = c.getFields();
+	if (allowProtected) {
+		ArrayList<Field> fields = new ArrayList<Field>();
+		for(; c!= null; c = c.getSuperclass()) {
+			for (Field f : c.getDeclaredFields()) {
+				int mod = f.getModifiers();
+				if (Modifier.isPublic(mod) || Modifier.isProtected(mod))
+					fields.add(f);
+			}
+		}
+		allfields = fields.toArray(allfields);
+	}
 	for(int i = 0; i < allfields.length; i++)
 		{
 		if(name.equals(allfields[i].getName())
@@ -495,7 +514,22 @@ static public Field getField(Class c, String name, boolean getStatics){
 }
 
 static public List<Method> getMethods(Class c, int arity, String name, boolean getStatics){
+    return getMethods(c, arity, name, getStatics, false);
+}
+
+static public List<Method> getMethods(Class c, int arity, String name, boolean getStatics, boolean allowProtected) {
 	Method[] allmethods = c.getMethods();
+	if (allowProtected) {
+		ArrayList<Method> methods = new ArrayList<Method>();
+		for(Class c1 = c; c1!= null; c1 = c1.getSuperclass()) {
+			for (Method m : c1.getDeclaredMethods()) {
+				int mod = m.getModifiers();
+				if (Modifier.isPublic(mod) || Modifier.isProtected(mod))
+					methods.add(m);
+				}
+		}
+		allmethods = methods.toArray(allmethods);
+	}
 	ArrayList methods = new ArrayList();
 	ArrayList bridgeMethods = new ArrayList();
 	for(int i = 0; i < allmethods.length; i++)
@@ -529,7 +563,7 @@ static public List<Method> getMethods(Class c, int arity, String name, boolean g
 
 	if(methods.isEmpty())
 		methods.addAll(bridgeMethods);
-	
+
 	if(!getStatics && c.isInterface())
 		{
 		allmethods = Object.class.getMethods();

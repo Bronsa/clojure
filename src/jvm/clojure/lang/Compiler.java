@@ -328,6 +328,8 @@ static final public Var RET_LOCAL_NUM = Var.create().setDynamic();
 static final public Var COMPILE_STUB_SYM = Var.create(null).setDynamic();
 static final public Var COMPILE_STUB_CLASS = Var.create(null).setDynamic();
 
+//[stub-class, method]
+static final public Var ALLOW_PROTECTED_ACCESS = Var.create(null).setDynamic();
 
 //PathNode chain
 static final public Var CLEAR_PATH = Var.create(null).setDynamic();
@@ -994,8 +996,12 @@ static public abstract class HostExpr implements Expr, MaybePrimitiveExpr{
 				Symbol sym = (Symbol) RT.third(form);
 				if(c != null)
 					maybeField = Reflector.getMethods(c, 0, munge(sym.name), true).size() == 0;
-				else if(instance != null && instance.hasJavaClass() && instance.getJavaClass() != null)
-					maybeField = Reflector.getMethods(instance.getJavaClass(), 0, munge(sym.name), false).size() == 0;
+				else if(instance != null && instance.hasJavaClass())
+					{
+					Class ic = instance.getJavaClass();
+					if (ic != null)
+						maybeField = Reflector.getMethods(ic, 0, munge(sym.name), false, allowProtectedAccess(ic)).size() == 0;
+					}
 				}
 
 			if(maybeField)    //field
@@ -1152,7 +1158,7 @@ static class InstanceFieldExpr extends FieldExpr implements AssignableExpr{
 	public InstanceFieldExpr(int line, int column, Expr target, String fieldName, Symbol tag, boolean requireField) {
 		this.target = target;
 		this.targetClass = target.hasJavaClass() ? target.getJavaClass() : null;
-		this.field = targetClass != null ? Reflector.getField(targetClass, fieldName, false) : null;
+		this.field = targetClass != null ? Reflector.getField(targetClass, fieldName, false, allowProtectedAccess(this.targetClass)) : null;
 		this.fieldName = fieldName;
 		this.line = line;
 		this.column = column;
@@ -1485,9 +1491,11 @@ static class InstanceMethodExpr extends MethodExpr{
 		this.target = target;
 		this.tag = tag;
 		this.tailPosition = tailPosition;
-		if(target.hasJavaClass() && target.getJavaClass() != null)
+		Class c = target.hasJavaClass() ? target.getJavaClass() : null;
+		if(c != null)
 			{
-			List methods = Reflector.getMethods(target.getJavaClass(), args.count(), methodName, false);
+			boolean allowProtected = allowProtectedAccess(c);
+			List methods = Reflector.getMethods(c, args.count(), methodName, false, allowProtected);
 			if(methods.isEmpty())
 				{
 				method = null;
@@ -1518,7 +1526,7 @@ static class InstanceMethodExpr extends MethodExpr{
 				if(m != null && !Modifier.isPublic(m.getDeclaringClass().getModifiers()))
 					{
 					//public method of non-public class, try to find it in hierarchy
-					m = Reflector.getAsMethodOfPublicBase(m.getDeclaringClass(), m);
+					m = Reflector.getAsMethodOfPublicBase(c, m, allowProtected);
 					}
 				method = m;
 				if(method == null && RT.booleanCast(RT.WARN_ON_REFLECTION.deref()))
@@ -2506,8 +2514,27 @@ static String getTypeStringForArgs(IPersistentVector args){
 	return sb.toString();
 }
 
-static Constructor getConstructor(Class c, IPersistentVector args) {
+static boolean allowProtectedAccess(Class c) {
+    IPersistentVector v = (IPersistentVector)ALLOW_PROTECTED_ACCESS.deref();
+    if (v == null)
+        return false;
+    Class sc = (Class) v.nth(0);
+    return METHOD.deref() == v.nth(1) && c.isAssignableFrom(sc);
+}
+
+static Constructor getConstructor(Class c, IPersistentVector args, boolean allowProtected) {
     Constructor[] allctors = c.getConstructors();
+    if (allowProtected) {
+        ArrayList<Constructor> constructors = new ArrayList<Constructor>();
+        for(Class c1 = c; c1!= null; c1 = c1.getSuperclass()) {
+            for (Constructor ct : c1.getDeclaredConstructors()) {
+                int mod = ct.getModifiers();
+                if (Modifier.isPublic(mod) || Modifier.isProtected(mod))
+                    constructors.add(ct);
+            }
+        }
+        allctors = constructors.toArray(allctors);
+    }
     ArrayList ctors = new ArrayList();
     ArrayList<Class[]> params = new ArrayList();
     ArrayList<Class> rets = new ArrayList();
@@ -2601,7 +2628,7 @@ public static class NewExpr implements Expr{
 	public NewExpr(Class c, IPersistentVector args, int line, int column) {
 		this.args = args;
 		this.c = c;
-		this.ctor = getConstructor(c, args);
+		this.ctor = getConstructor(c, args, false);
 		if(ctor == null && RT.booleanCast(RT.WARN_ON_REFLECTION.deref()))
 			{
 			RT.errPrintWriter()
@@ -4415,7 +4442,7 @@ static public class ObjExpr implements Expr{
 		if(!isDefclass)
 			ctorgen.invokeConstructor(Type.getObjectType(superName), voidctor);
 		else {
-			Constructor ctor = getConstructor(RT.classForName(superName.replace('/', '.')), ctor_args);
+			Constructor ctor = getConstructor(RT.classForName(superName.replace('/', '.')), ctor_args, true);
 
 			MethodExpr.emitTypedArgs(isDeftype() ? new ObjExpr(tag) : this, ctorgen, ctor.getParameterTypes(), ctor_args);
 
@@ -8088,7 +8115,7 @@ static public class NewInstanceExpr extends ObjExpr{
 			IPersistentCollection methods = null;
 			for(ISeq s = methodForms; s != null; s = RT.next(s))
 				{
-				NewInstanceMethod m = NewInstanceMethod.parse(ret, (ISeq) RT.first(s),thistag, overrideables);
+				NewInstanceMethod m = NewInstanceMethod.parse(ret, (ISeq) RT.first(s),thistag, overrideables, stub);
 				methods = RT.conj(methods, m);
 				}
 
@@ -8483,7 +8510,7 @@ public static class NewInstanceMethod extends ObjMethod{
 	}
 
 	static NewInstanceMethod parse(ObjExpr objx, ISeq form, Symbol thistag,
-	                               Map overrideables) {
+	                               Map overrideables, Class c) {
 		//(methodname [this-name args*] body...)
 		//this-name might be nil
 		NewInstanceMethod method = new NewInstanceMethod(objx, (ObjMethod) METHOD.deref());
@@ -8514,6 +8541,8 @@ public static class NewInstanceMethod extends ObjMethod{
                             ,CLEAR_SITES, PersistentHashMap.EMPTY
                             ,METHOD_RETURN_CONTEXT, RT.T
                     ));
+            if(objx.isDefclass)
+				Var.pushThreadBindings(RT.mapUniqueKeys(ALLOW_PROTECTED_ACCESS, RT.vector(c, method)));
 
 			//register 'this' as local 0
 			if(thisName != null)
@@ -8613,6 +8642,8 @@ public static class NewInstanceMethod extends ObjMethod{
 			}
 		finally
 			{
+			if(objx.isDefclass)
+				Var.popThreadBindings();
 			Var.popThreadBindings();
 			}
 	}
