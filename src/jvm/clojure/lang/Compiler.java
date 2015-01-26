@@ -194,6 +194,7 @@ static
 
 //symbol->localbinding
 static final public Var LOCAL_ENV = Var.create(null).setDynamic();
+static final public Var USE_ENV_IDX = Var.create(RT.F).setDynamic();
 
 //vector<localbinding>
 static final public Var LOOP_LOCALS = Var.create().setDynamic();
@@ -4464,8 +4465,23 @@ static public class ObjExpr implements Expr{
 			ctorgen.invokeConstructor(Type.getObjectType(superName), voidctor);
 		else {
 			Constructor ctor = getConstructor(RT.classForName(superName.replace('/', '.')), ctor_args, true);
-
-			MethodExpr.emitTypedArgs(isDeftype() ? new ObjExpr(tag) : this, ctorgen, ctor.getParameterTypes(), ctor_args);
+			try {
+                if (!isDeftype())
+					{
+					Var.pushThreadBindings(RT.map(LOCAL_ENV, PersistentHashMap.EMPTY, NEXT_LOCAL_NUM, 2, USE_ENV_IDX, RT.T));
+					for(ISeq s = RT.keys(closes); s != null; s = s.next())
+						{
+						LocalBinding olb = (LocalBinding) s.first();
+						Symbol sym = olb.sym;
+						LocalBinding lb = registerLocal(sym, null, new MethodParamExpr(tagClass(olb.tag)),false);
+						lb.canBeCleared = false;
+						}
+					}
+				MethodExpr.emitTypedArgs(new ObjExpr(tag), ctorgen, ctor.getParameterTypes(), ctor_args);
+			} finally {
+				if (!isDeftype())
+					Var.popThreadBindings();
+			}
 
 			Method superCtor = new Method("<init>", Type.VOID_TYPE, Type.getType(ctor).getArgumentTypes());
 			ctorgen.invokeConstructor(Type.getObjectType(superName), superCtor);
@@ -5184,6 +5200,8 @@ static public class ObjExpr implements Expr{
 			int argoff = canBeDirect ?0:1;
 			Class primc = lb.getPrimitiveType();
 //            String rep = lb.sym.name + " " + lb.toString().substring(lb.toString().lastIndexOf('@'));
+			if(USE_ENV_IDX.deref() == RT.T)
+				lb=(LocalBinding) RT.get(LOCAL_ENV.deref(), lb.sym);
 			if(lb.isArg)
 				{
 				gen.loadArg(lb.idx-argoff);
