@@ -1544,6 +1544,11 @@ static class InstanceMethodExpr extends MethodExpr{
 					    && allowProtected
 					    && method.getDeclaringClass().isAssignableFrom(t.b.getJavaClass().getSuperclass())
 					    && t.b.getJavaClass().getSuperclass() == c;
+					if(this.compileStatic)
+						try {
+							if(Modifier.isAbstract(t.b.getJavaClass().getSuperclass().getMethod(method.getName(), method.getParameterTypes()).getModifiers()))
+								throw new IllegalArgumentException("Trying to invoke abstract method: " + method.getName());
+						} catch (NoSuchMethodException e) {}
 					}
 				}
 			}
