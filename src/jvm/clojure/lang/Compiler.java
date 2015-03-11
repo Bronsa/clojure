@@ -8441,7 +8441,10 @@ static public class NewInstanceExpr extends ObjExpr{
 				gen.visitCode();
 				gen.loadThis();
 				gen.loadArgs();
-				gen.invokeInterface(Type.getType(m.getDeclaringClass()),target);
+				if (m.getDeclaringClass().isInterface())
+					gen.invokeInterface(Type.getType(m.getDeclaringClass()),target);
+				else
+					gen.invokeVirtual(Type.getType(m.getDeclaringClass()),target);
 				gen.returnValue();
 				gen.endMethod();
 				}
