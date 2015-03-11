@@ -2548,12 +2548,10 @@ static Constructor getConstructor(Class c, IPersistentVector args, boolean allow
     Constructor[] allctors = c.getConstructors();
     if (allowProtected) {
         ArrayList<Constructor> constructors = new ArrayList<Constructor>();
-        for(Class c1 = c; c1!= null; c1 = c1.getSuperclass()) {
-            for (Constructor ct : c1.getDeclaredConstructors()) {
-                int mod = ct.getModifiers();
-                if (Modifier.isPublic(mod) || Modifier.isProtected(mod))
-                    constructors.add(ct);
-            }
+        for (Constructor ct : c.getDeclaredConstructors()) {
+            int mod = ct.getModifiers();
+            if (Modifier.isPublic(mod) || Modifier.isProtected(mod))
+                constructors.add(ct);
         }
         allctors = constructors.toArray(allctors);
     }
@@ -4464,7 +4462,10 @@ static public class ObjExpr implements Expr{
 		if(!isDefclass)
 			ctorgen.invokeConstructor(Type.getObjectType(superName), voidctor);
 		else {
-			Constructor ctor = getConstructor(RT.classForName(superName.replace('/', '.')), ctor_args, true);
+			Class superClass = RT.classForName(superName.replace('/', '.'));
+			Constructor ctor = getConstructor(superClass, ctor_args, true);
+			if (ctor == null)
+				throw new IllegalArgumentException("No matching ctor found for " + superClass);
 			try {
                 if (!isDeftype())
 					{
