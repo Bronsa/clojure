@@ -4483,7 +4483,15 @@ static public class ObjExpr implements Expr{
 						lb.canBeCleared = false;
 						}
 					}
-				MethodExpr.emitTypedArgs(new ObjExpr(tag), ctorgen, ctor.getParameterTypes(), ctor_args);
+				ObjExpr oj = new ObjExpr(tag);
+				oj.keywords = keywords;
+				oj.vars = vars;
+				oj.constants = constants;
+				oj.keywordCallsites = keywordCallsites;
+				oj.protocolCallsites = protocolCallsites;
+				oj.varCallsites = varCallsites;
+				oj.objtype = objtype;
+				MethodExpr.emitTypedArgs(oj, ctorgen, ctor.getParameterTypes(), ctor_args);
 			} finally {
 				if (!isDeftype())
 					Var.popThreadBindings();
