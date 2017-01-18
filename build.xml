@@ -65,6 +65,7 @@
       <arg value="clojure.xml"/>
       <arg value="clojure.zip"/>
       <arg value="clojure.inspector"/>
+      <arg value="clojure.interop"/>
       <arg value="clojure.walk"/>
       <arg value="clojure.stacktrace"/>
       <arg value="clojure.template"/>
