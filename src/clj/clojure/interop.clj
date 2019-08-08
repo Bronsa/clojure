@@ -16,10 +16,10 @@
 (def ^:private build-positional-factory @#'clojure.core/build-positional-factory)
 
 (defn- emit-defclass*
-  [name fields interfaces methods opts]
-  (let [classname (with-meta (symbol (str (namespace-munge *ns*) "." name)) (meta name))
+  [tagname fields interfaces methods opts]
+  (let [classname (with-meta (symbol (str (namespace-munge *ns*) "." tagname)) (meta tagname))
         interfaces (conj interfaces 'clojure.lang.IType)]
-    `(deftype* ~name ~classname ~fields
+    `(deftype* ~(symbol (name (ns-name *ns*)) (name tagname)) ~classname ~fields
        :implements ~interfaces
        ~@(mapcat identity opts)
        ~@methods)))
