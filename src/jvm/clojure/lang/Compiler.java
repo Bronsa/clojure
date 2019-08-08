@@ -4474,7 +4474,7 @@ static public class ObjExpr implements Expr{
 			try {
                 if (!isDeftype())
 					{
-					Var.pushThreadBindings(RT.map(LOCAL_ENV, PersistentHashMap.EMPTY, NEXT_LOCAL_NUM, 2, USE_ENV_IDX, RT.T));
+                    Var.pushThreadBindings(RT.map(LOCAL_ENV, PersistentHashMap.EMPTY, NEXT_LOCAL_NUM, isDefclass ? 1 : 2, USE_ENV_IDX, RT.T));
 					for(ISeq s = RT.keys(closes); s != null; s = s.next())
 						{
 						LocalBinding olb = (LocalBinding) s.first();
@@ -5057,7 +5057,7 @@ static public class ObjExpr implements Expr{
 	}
 
 	boolean supportsMeta(){
-		return !isDeftype();
+		return !isDeftype() && ! isDefclass;
 	}
 	void emitClearCloses(GeneratorAdapter gen){
 //		int a = 1;

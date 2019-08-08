@@ -63,6 +63,8 @@
    one of its base classes and access/set! public and protected fields of
    those.
 
+   Unlike clojure.core/reify, doesn't automatically implement IObj.
+
    super-args is a (possibly empty) vector of arguments to the superclass
    constructor
 
@@ -72,8 +74,7 @@
   (let [[opts [super-class ctor & specs]] (parse-opts opts+specs)
         opts+specs (concat (mapcat identity opts) '(Object) specs)
         [interfaces methods opts] (parse-opts+specs opts+specs)]
-    (with-meta `(reify* ~interfaces
-                        :super-class ~super-class
-                        :ctor-args ~ctor
-                        ~@methods)
-      (meta &form))))
+    `(reify* ~interfaces
+             :super-class ~super-class
+             :ctor-args ~ctor
+             ~@methods)))
