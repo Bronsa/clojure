@@ -4491,6 +4491,9 @@ static public class ObjExpr implements Expr{
 				oj.protocolCallsites = protocolCallsites;
 				oj.varCallsites = varCallsites;
 				oj.objtype = objtype;
+                for(int i = 0; i < constants.count(); i++)
+                  usedConstants = (IPersistentSet) usedConstants.cons(i);
+                oj.usedConstants = usedConstants;
 				MethodExpr.emitTypedArgs(oj, ctorgen, ctor.getParameterTypes(), ctor_args);
 			} finally {
 				if (!isDeftype())
